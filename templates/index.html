@@ -35,7 +35,7 @@
 <body class="h-screen flex flex-col overflow-hidden">
 
     <!-- Header -->
-    <header class="p-4 border-b border-gray-800 flex justify-between items-center bg-black">
+    <header class="p-4 border-b border-gray-800 flex justify-between items-center bg-black z-10">
         <div class="flex items-center space-x-2">
             <span class="text-2xl font-bold tracking-widest text-[#00ff41]">AEGIS</span>
             <span class="text-xs text-gray-500 uppercase">Daemon Protocol v4.1</span>
@@ -48,27 +48,52 @@
     <!-- Main Grid -->
     <main class="flex-1 grid grid-cols-12 gap-1 p-1">
         
-        <!-- Left Col: Terminal / Execution -->
+        <!-- Left Col: Sandbox & Containers -->
         <div class="col-span-8 flex flex-col space-y-1">
+            
+            <!-- Container List -->
+            <div class="terminal-box p-2 h-32 overflow-y-auto">
+                <div class="flex justify-between items-center mb-2 px-2">
+                    <span class="text-xs uppercase text-gray-500 font-bold">Active Containers</span>
+                    <button onclick="refreshContainers()" class="text-xs text-blue-500 hover:text-white">[REFRESH]</button>
+                </div>
+                <table class="w-full text-xs font-mono text-left">
+                    <thead>
+                        <tr class="text-gray-600 border-b border-gray-800">
+                            <th class="pb-1 pl-2">ID</th>
+                            <th class="pb-1">NAME</th>
+                            <th class="pb-1">IMAGE</th>
+                            <th class="pb-1">STATUS</th>
+                            <th class="pb-1">ACTION</th>
+                        </tr>
+                    </thead>
+                    <tbody id="container-list" class="text-gray-400">
+                        <!-- Injected via JS -->
+                        <tr><td colspan="5" class="text-center py-2 italic text-gray-700">No active containers found...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Terminal Output -->
             <div class="terminal-box flex-1 p-4 relative overflow-hidden">
                 <div class="absolute top-2 right-2 text-xs text-gray-600">SANDBOX_TTY1</div>
                 <div id="terminal-output" class="font-mono text-sm space-y-1 h-full overflow-y-auto pb-8">
                     <div class="text-gray-500">System initialization complete...</div>
-                    <div class="text-gray-500">Waiting for command...</div>
+                    <div class="text-gray-500">Docker uplink established.</div>
+                    <div class="text-blue-900 animate-pulse">Monitor active.</div>
                     <!-- Terminal logs will go here -->
                 </div>
             </div>
             
-            <div class="h-48 terminal-box p-4">
-                <div class="text-xs text-gray-500 mb-2 uppercase">Input Stream</div>
-                <div class="flex space-x-2">
-                    <span class="text-green-500">$</span>
-                    <input type="text" class="bg-transparent border-none outline-none flex-1 text-white font-mono" placeholder="Type command..." disabled>
-                </div>
+            <!-- Metrics (Placeholder) -->
+            <div class="h-12 terminal-box p-2 flex items-center justify-between px-4 text-xs text-gray-600">
+                <span>CPU: <span class="text-green-500">2%</span></span>
+                <span>MEM: <span class="text-green-500">128MB</span></span>
+                <span>NET: <span class="text-blue-500">UP</span></span>
             </div>
         </div>
 
-        <!-- Right Col: Visual Cortex / Vision -->
+                <!-- Right Col: Visual Cortex / Vision -->
         <div class="col-span-4 terminal-box flex flex-col">
             <div class="p-3 border-b border-gray-800 flex justify-between items-center bg-[#0a0a0a]">
                 <span class="uppercase text-xs font-bold text-blue-400">Visual Cortex</span>
@@ -85,11 +110,34 @@
                 </div>
             </div>
 
-            <!-- Vision Display -->
-            <div class="flex-1 bg-black relative p-2 overflow-hidden flex items-center justify-center" id="vision-display">
+            <!-- Tabs -->
+            <div class="flex border-b border-gray-800 text-xs">
+                <button onclick="switchTab('vision')" class="flex-1 py-1 bg-gray-900 text-gray-300 hover:bg-gray-800 border-r border-gray-800">Vision</button>
+                <button onclick="switchTab('chat')" class="flex-1 py-1 bg-black text-gray-500 hover:text-white">Supervisor</button>
+            </div>
+
+            <!-- Vision Display / Chat Display Container -->
+            <div class="flex-1 relative overflow-hidden">
+                
+                <!-- Vision View -->
+                <div id="vision-view" class="absolute inset-0 bg-black p-2 flex items-center justify-center">
+                    <div class="text-gray-700 text-xs text-center" id="vision-display">
                 <div class="text-gray-700 text-xs text-center">
                     NO SIGNAL<br>Waiting for input...
                 </div>
+                    </div>
+                </div>
+
+                <!-- Chat View (Hidden by default) -->
+                <div id="chat-view" class="absolute inset-0 bg-gray-900 hidden flex flex-col">
+                    <div id="chat-history" class="flex-1 p-2 space-y-2 overflow-y-auto text-xs font-mono">
+                        <div class="text-green-500">[SYSTEM] Supervisor Online.</div>
+                    </div>
+                    <div class="p-2 border-t border-gray-800 bg-black flex">
+                        <input type="text" id="chat-input" class="flex-1 bg-transparent border-none outline-none text-white text-xs" placeholder="Ask Supervisor (e.g., 'check logs')...">
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -101,6 +149,7 @@
 
         socket.on('connect', () => {
             console.log("Connected to AEGIS Core");
+            refreshContainers();
         });
 
         async function scanUrl() {
@@ -139,6 +188,70 @@
                 btn.innerText = "Scan";
             }
         }
+
+        async function refreshContainers() {
+            try {
+                const response = await fetch('/api/containers');
+                const data = await response.json();
+                const tbody = document.getElementById('container-list');
+                
+                if(data.success && data.containers.length > 0) {
+                    tbody.innerHTML = data.containers.map(c => `
+                        <tr class="hover:bg-[#111] transition-colors border-b border-gray-900/50">
+                            <td class="py-2 pl-2 text-blue-400">${c.id}</td>
+                            <td class="py-2 text-white font-bold">${c.name}</td>
+                            <td class="py-2 text-gray-500">${c.image}</td>
+                            <td class="py-2"><span class="text-green-500 px-1 bg-green-900/20 rounded">${c.status}</span></td>
+                            <td class="py-2">
+                                <button class="text-[10px] bg-gray-800 hover:bg-gray-700 px-2 py-1 rounded text-white uppercase">Logs</button>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-700">No active sandbox containers detected.</td></tr>';
+                }
+            } catch(e) {
+                console.error("Container fetch failed", e);
+            }
+        }
+
+        function switchTab(tab) {
+            if(tab === 'vision') {
+                document.getElementById('vision-view').classList.remove('hidden');
+                document.getElementById('chat-view').classList.add('hidden');
+            } else {
+                document.getElementById('vision-view').classList.add('hidden');
+                document.getElementById('chat-view').classList.remove('hidden');
+            }
+        }
+
+        // Chat Logic
+        document.getElementById('chat-input').addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                const input = e.target;
+                const msg = input.value;
+                if (!msg) return;
+
+                const history = document.getElementById('chat-history');
+                
+                // User Message
+                history.innerHTML += `<div class="text-gray-300Pairing">> ${msg}</div>`;
+                input.value = '';
+                history.scrollTop = history.scrollHeight;
+
+                // Call API
+                const res = await fetch('/api/supervisor/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message: msg})
+                });
+                const data = await res.json();
+                
+                // Bot Response
+                history.innerHTML += `<div class="text-blue-400 font-bold">${data.sender}: ${data.response}</div>`;
+                history.scrollTop = history.scrollHeight;
+            }
+        });
     </script>
 </body>
 </html>
