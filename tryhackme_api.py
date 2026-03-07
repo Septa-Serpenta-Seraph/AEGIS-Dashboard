@@ -27,7 +27,9 @@ class TryHackMeClient:
         """
         self.mode = mode
         self.api_key = api_key
-        self.base_url = 'https://tryhackme.com/api'
+        # Note: TryHackMe has no official public API; live mode would require
+        # VPN connectivity, session cookies, or unofficial endpoints.
+        self.base_url = None  # No public API URL – live mode not implemented
         
         # Mock data stores
         self._mock_profile = self._build_mock_profile()
@@ -190,7 +192,14 @@ class TryHackMeClient:
     # ------------------------------------------------------------------
     
     def _live_request(self, endpoint: str, params: Optional[Dict] = None) -> Any:
-        """Make a live API request to TryHackMe."""
+        """Placeholder for live API requests to TryHackMe.
+        
+        Note: TryHackMe has no official public API. Live mode would require
+        VPN connectivity, session cookies, or unofficial endpoints.
+        """
+        if self.base_url is None:
+            return {'error': 'Live mode not implemented: No public API URL available'}
+        
         headers = {}
         if self.api_key:
             headers['Authorization'] = f'Bearer {self.api_key}'
