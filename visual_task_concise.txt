@@ -1,0 +1,8 @@
+Write a Flask endpoint POST /api/stats/visualize that:
+1. Accepts JSON: {"metric": "cpu", "data": [{"timestamp": "2026-03-06T12:00:00", "value": 45.2}, ...]}
+2. Generates a matplotlib line chart (in-memory, no disk).
+3. Returns image/png with chart.
+4. Uses base64 encoding for image bytes.
+5. Include error handling for missing fields.
+6. Keep imports minimal (flask, matplotlib, base64, io).
+7. Output only Python code, no explanation.

@@ -102,8 +102,12 @@
 
             <!-- Vision Controls -->
             <div class="p-4 border-b border-gray-800 bg-[#0e0e0e]">
-                <div class="flex space-x-2">
+                <div class="flex space-x-2 items-center">
                     <input type="text" id="url-input" class="flex-1 bg-black border border-gray-700 p-2 text-xs font-mono text-white focus:border-blue-500 outline-none" placeholder="https://...">
+                    <div class="flex items-center space-x-1 text-xs text-gray-400">
+                        <input type="checkbox" id="extract-checkbox">
+                        <label for="extract-checkbox">Extract text</label>
+                    </div>
                     <button onclick="scanUrl()" id="scan-btn" class="bg-blue-900 hover:bg-blue-700 text-blue-100 text-xs px-4 py-2 uppercase font-bold transition-colors">
                         Scan
                     </button>
@@ -169,13 +173,21 @@
                 const response = await fetch('/api/vision/scan', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: url })
+                    body: JSON.stringify({ url: url, extract: document.getElementById('extract-checkbox').checked })
                 });
                 
                 const data = await response.json();
 
                 if (data.success) {
-                    display.innerHTML = `<img src="${data.image}" class="max-w-full max-h-full border border-blue-900 object-contain shadow-lg shadow-blue-900/20">`;
+                    let html = `<img src="${data.image}" class="max-w-full max-h-full border border-blue-900 object-contain shadow-lg shadow-blue-900/20">`;
+                    if (data.extracted_text) {
+                        let text = data.extracted_text;
+                        if (text.length > 500) {
+                            text = text.substring(0, 500) + '...';
+                        }
+                        html += `<div class="mt-4 p-2 bg-gray-900 text-gray-300 text-xs font-mono whitespace-pre-wrap border border-gray-800 max-h-40 overflow-y-auto">${text}</div>`;
+                    }
+                    display.innerHTML = html;
                 } else {
                     display.innerHTML = `<div class="text-red-500 text-xs text-center">SIGNAL LOST<br>${data.error}</div>`;
                 }

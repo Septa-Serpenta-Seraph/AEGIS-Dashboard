@@ -1,0 +1,16 @@
+Write Python code for a Flask API endpoint that:
+
+1. Route: POST /api/stats/visualize
+2. Accepts JSON: {"metric": "container_count" | "cpu_usage" | "memory"}
+3. Uses matplotlib to generate a simple bar chart or line graph
+4. Returns the chart as base64-encoded PNG in JSON response
+5. Example data source: Docker container stats (mock data is fine for now)
+
+Requirements:
+- Use matplotlib.pyplot
+- Generate chart in-memory (no file writing)
+- Return format: {"success": true, "image": "data:image/png;base64,..."}
+- Keep it under 50 lines
+- Add this to an existing Flask app (assume app already exists)
+
+Only output the Python code, no explanations.

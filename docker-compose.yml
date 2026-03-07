@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  aegis-dashboard:
+    build: .
+    container_name: aegis-dashboard
+    ports:
+      - "5000:5000"
+    volumes:
+      # Persistent data storage
+      - ./data:/app/data
+      # Mount Docker socket for container monitoring
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Mount code for development (optional)
+      - ./app.py:/app/app.py
+      - ./discord_webhook.py:/app/discord_webhook.py
+      - ./requirements.txt:/app/requirements.txt
+      - ./static:/app/static
+      - ./templates:/app/templates
+    environment:
+      - FLASK_ENV=development
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    restart: unless-stopped
+
+volumes:
+  aegis-data:
+    driver: local
