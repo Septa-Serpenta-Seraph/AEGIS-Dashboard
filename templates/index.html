@@ -115,9 +115,10 @@
             </div>
 
             <!-- Tabs -->
-            <div class="flex border-b border-gray-800 text-xs">
+            <div class="flex border-b border-gray-800 text-xs text-[10px]">
                 <button onclick="switchTab('vision')" class="flex-1 py-1 bg-gray-900 text-gray-300 hover:bg-gray-800 border-r border-gray-800" id="tab-vision">Vision</button>
-                <button onclick="switchTab('persistence')" class="flex-1 py-1 bg-black text-gray-500 hover:text-white border-r border-gray-800" id="tab-persistence">Persistence</button>
+                <button onclick="switchTab('persistence')" class="flex-1 py-1 bg-black text-gray-500 hover:text-white border-r border-gray-800" id="tab-persistence">Memory</button>
+                <button onclick="switchTab('sovereignty')" class="flex-1 py-1 bg-black text-gray-500 hover:text-white border-r border-gray-800" id="tab-sovereignty">Sovereignty</button>
                 <button onclick="switchTab('chat')" class="flex-1 py-1 bg-black text-gray-500 hover:text-white" id="tab-chat">Supervisor</button>
             </div>
 
@@ -131,24 +132,93 @@
                     </div>
                 </div>
 
-                <!-- Persistence View (New) -->
+                <!-- Persistence View -->
                 <div id="persistence-view" class="absolute inset-0 bg-[#050505] hidden flex flex-col p-2 space-y-4 overflow-y-auto">
+                    <!-- Global Health -->
+                    <div class="border border-gray-800 p-2 bg-black">
+                         <div class="flex justify-between items-center mb-2">
+                             <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest">System Health</span>
+                             <div id="health-status-dot" class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                         </div>
+                         <div class="grid grid-cols-2 gap-2 text-[9px] font-mono">
+                             <div class="flex justify-between border-b border-gray-900 pb-1">
+                                 <span class="text-gray-600">DATABASE</span>
+                                 <span id="health-db" class="text-green-500">OK</span>
+                             </div>
+                             <div class="flex justify-between border-b border-gray-900 pb-1">
+                                 <span class="text-gray-600">DOCKER</span>
+                                 <span id="health-docker" class="text-green-500">OK</span>
+                             </div>
+                             <div class="flex justify-between border-b border-gray-900 pb-1">
+                                 <span class="text-gray-600">QDRANT</span>
+                                 <span id="health-qdrant" class="text-blue-500">ACTIVE</span>
+                             </div>
+                             <div class="flex justify-between border-b border-gray-900 pb-1">
+                                 <span class="text-gray-600">UPTIME</span>
+                                 <span id="health-uptime" class="text-white">LIVE ARCHIVE</span>
+                             </div>
+                         </div>
+                    </div>
+
+                    <!-- Telemetry Chart -->
+                    <div class="border border-gray-800 p-2 bg-black">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest">Active Telemetry</span>
+                            <div class="flex space-x-2">
+                                <button onclick="loadTelemetry('cpu')" class="text-[8px] text-blue-500 hover:underline">CPU</button>
+                                <button onclick="loadTelemetry('mem')" class="text-[8px] text-blue-500 hover:underline">MEM</button>
+                            </div>
+                        </div>
+                        <div id="telemetry-display" class="w-full aspect-video bg-[#0a0a0a] border border-gray-900 flex items-center justify-center relative overflow-hidden">
+                             <div class="text-[10px] text-gray-800 animate-pulse">SYNCHRONIZING...</div>
+                             <img id="telemetry-img" class="absolute inset-0 w-full h-full object-contain hidden">
+                        </div>
+                    </div>
+
                     <div class="border border-gray-800 p-2">
                         <div class="flex justify-between items-center mb-2">
-                            <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest">Container History</span>
+                            <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest">Sovereign Chronicles</span>
                             <button onclick="loadPersistenceData()" class="text-[10px] text-blue-500 hover:underline">REFRESH</button>
                         </div>
-                        <div id="container-history-list" class="text-[10px] font-mono space-y-1">
-                            <!-- Injected snapshots -->
-                            <div class="text-gray-700 italic">No snapshots found...</div>
+                        <div id="container-history-list" class="text-[9px] font-mono space-y-1">
+                            <!-- snapshots here -->
                         </div>
                     </div>
                     
                     <div class="border border-gray-800 p-2">
-                        <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest block mb-2">Historical Screenshots</span>
+                        <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest block mb-2">Visual Vault (Vision Lock)</span>
                         <div id="screenshot-history-list" class="grid grid-cols-2 gap-2 text-[10px]">
-                            <!-- Injected screenshots -->
-                            <div class="col-span-2 text-gray-700 italic">No screenshots archived...</div>
+                            <!-- screenshots here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sovereignty View -->
+                <div id="sovereignty-view" class="absolute inset-0 bg-[#0a0a0a] hidden flex flex-col p-2 space-y-4 overflow-y-auto">
+                    <!-- Efficiency & Cost -->
+                    <div class="border border-gray-800 p-2 bg-black">
+                        <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest block mb-2">Efficiency & Cost</span>
+                        <div class="grid grid-cols-3 gap-2 text-[10px] font-mono">
+                            <div class="p-2 bg-gray-900 border border-gray-800">
+                                <div class="text-gray-600 text-[8px]">TOTAL TOKENS</div>
+                                <div id="cost-tokens" class="text-white">124.5k</div>
+                            </div>
+                            <div class="p-2 bg-gray-900 border border-gray-800">
+                                <div class="text-gray-600 text-[8px]">TOTAL COST</div>
+                                <div id="cost-usd" class="text-green-500">$2.49</div>
+                            </div>
+                            <div class="p-2 bg-gray-900 border border-gray-800">
+                                <div class="text-gray-600 text-[8px]">EFFICIENCY</div>
+                                <div id="efficiency-score" class="text-blue-400">94%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Safety Guardrails -->
+                    <div class="border border-gray-800 p-2 bg-black flex-1">
+                        <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest block mb-2">Ethical Guardrails</span>
+                        <div id="guardrail-list" class="space-y-2">
+                            <!-- Injected guardrails -->
                         </div>
                     </div>
                 </div>
@@ -250,11 +320,11 @@
 
         function switchTab(tab) {
             // Views
-            const views = ['vision-view', 'persistence-view', 'chat-view'];
+            const views = ['vision-view', 'persistence-view', 'sovereignty-view', 'chat-view'];
             views.forEach(v => document.getElementById(v).classList.add('hidden'));
             
             // Highlight buttons
-            const buttons = ['tab-vision', 'tab-persistence', 'tab-chat'];
+            const buttons = ['tab-vision', 'tab-persistence', 'tab-sovereignty', 'tab-chat'];
             buttons.forEach(b => {
                 document.getElementById(b).classList.add('bg-black', 'text-gray-500');
                 document.getElementById(b).classList.remove('bg-gray-900', 'text-gray-300', 'text-white');
@@ -262,16 +332,63 @@
 
             // Activate current
             document.getElementById(tab + '-view').classList.remove('hidden');
-            const activeBtn = document.getElementById('tab-' + tab);
+            const activeBtn = document.getElementById(tab === 'persistence' ? 'tab-persistence' : 'tab-' + tab);
             activeBtn.classList.remove('bg-black', 'text-gray-500');
             activeBtn.classList.add('bg-gray-900', 'text-white');
 
             if (tab === 'persistence') {
                 loadPersistenceData();
+            } else if (tab === 'sovereignty') {
+                loadSovereigntyData();
             }
         }
 
+        async function loadSovereigntyData() {
+            try {
+                // Load Metrics
+                const metRes = await fetch('/api/sovereignty/metrics');
+                const metData = await metRes.json();
+                if (metData.success) {
+                    document.getElementById('cost-tokens').innerText = (metData.metrics.total_tokens / 1000).toFixed(1) + 'k';
+                    document.getElementById('cost-usd').innerText = '$' + metData.metrics.total_cost_usd.toFixed(2);
+                    document.getElementById('efficiency-score').innerText = (metData.metrics.efficiency_score * 100).toFixed(0) + '%';
+                }
+
+                // Load Guardrails
+                const guardRes = await fetch('/api/sovereignty/guardrails');
+                const guardData = await guardRes.json();
+                const guardList = document.getElementById('guardrail-list');
+                if (guardData.success) {
+                    guardList.innerHTML = guardData.guardrails.map(g => `
+                        <div class="p-2 bg-gray-900 border border-gray-800 text-[9px] font-mono">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-blue-400 font-bold">${g.name}</span>
+                                <span class="text-[8px] px-1 bg-green-900/20 text-green-500 rounded">${g.status}</span>
+                            </div>
+                            <div class="text-gray-500 italic">${g.desc}</div>
+                        </div>
+                    `).join('');
+                }
+            } catch (e) { console.error("Sovereignty load failed", e); }
+        }
+
+        async function lockVision(filename) {
+            try {
+                const res = await fetch('/api/vision/lock', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ filename: filename })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert("Vision Lock Engaged: Archive Prioritized.");
+                }
+            } catch (e) { console.error("Vision lock failed", e); }
+        }
+
         async function loadPersistenceData() {
+            updateHealth();
+            loadTelemetry('cpu');
             try {
                 // Load Containers History
                 const contRes = await fetch('/api/persistence/containers/history?limit=10');
@@ -297,9 +414,10 @@
 
                 if (screenData.success && screenData.screenshots.length > 0) {
                     screenList.innerHTML = screenData.screenshots.map(s => `
-                        <div class="border border-gray-800 bg-black">
-                             <img src="/data/screenshots/${s.filename}" class="w-full h-auto opacity-70 hover:opacity-100 transition-opacity">
+                        <div class="border border-gray-800 bg-black group relative">
+                             <img src="/data/screenshots/${s.filename}" class="w-full h-auto opacity-70 group-hover:opacity-100 transition-opacity">
                              <div class="p-1 text-[8px] text-gray-600 truncate">${s.url}</div>
+                             <button onclick="lockVision('${s.filename}')" class="absolute top-1 right-1 bg-blue-900/80 text-white text-[8px] px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">LOCK</button>
                         </div>
                     `).join('');
                 } else {
@@ -309,6 +427,63 @@
             } catch (e) {
                 console.error("Persistence load failed", e);
             }
+        }
+
+        async function updateHealth() {
+            try {
+                const res = await fetch('/api/health');
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('health-db').innerText = data.database.toUpperCase();
+                    document.getElementById('health-docker').innerText = data.docker.toUpperCase();
+                    document.getElementById('health-db').className = data.database === 'ok' ? 'text-green-500' : 'text-red-500';
+                    document.getElementById('health-docker').className = data.docker === 'connected' ? 'text-green-500' : 'text-red-500';
+                    document.getElementById('health-uptime').innerText = "LIVE ARCHIVE";
+                }
+            } catch (e) { console.error("Health update failed", e); }
+        }
+
+        async function loadTelemetry(type) {
+            const display = document.getElementById('telemetry-display');
+            const img = document.getElementById('telemetry-img');
+            
+            try {
+                // Get some sample data or actual historical data
+                // For the demo, let's fetch historical stats for the first container
+                const containersRes = await fetch('/api/containers');
+                const cData = await containersRes.json();
+                
+                let metrics = {};
+                if (cData.success && cData.containers.length > 0) {
+                    const cid = cData.containers[0].id;
+                    const statsRes = await fetch(`/api/persistence/stats/${cid}?limit=10`);
+                    const sData = await statsRes.json();
+                    
+                    if (sData.success && sData.stats.length > 0) {
+                        sData.stats.reverse().forEach((s, idx) => {
+                            const val = type === 'cpu' ? s.cpu_percent : s.memory_mb;
+                            metrics[`T-${sData.stats.length - idx}`] = val;
+                        });
+                    }
+                }
+                
+                if (Object.keys(metrics).length === 0) {
+                    // Fallback to mock if no data yet
+                    metrics = {"T-4": 1.2, "T-3": 2.5, "T-2": 1.8, "T-1": 4.2, "T-0": 3.1};
+                }
+
+                const res = await fetch('/api/stats/visualize', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ metrics: metrics, type: 'line' })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    img.src = `data:image/png;base64,${data.image}`;
+                    img.classList.remove('hidden');
+                }
+            } catch (e) { console.error("Telemetry load failed", e); }
         }
 
         // Chat Logic

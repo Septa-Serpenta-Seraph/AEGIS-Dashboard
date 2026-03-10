@@ -64,7 +64,22 @@ def init_db():
             session_id TEXT,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             message TEXT NOT NULL,
-            response TEXT NOT NULL
+            response TEXT NOT NULL,
+            tokens_used INTEGER,
+            cost_usd REAL
+        )
+    ''')
+    
+    # Token usage history (Summary level)
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS token_usage (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            model_name TEXT,
+            input_tokens INTEGER,
+            output_tokens INTEGER,
+            total_tokens INTEGER,
+            cost_usd REAL
         )
     ''')
     
@@ -95,16 +110,44 @@ def insert_screenshot(filename: str, url: str, container_id: Optional[str], file
     conn.commit()
     conn.close()
 
-def insert_chat_log(session_id: str, message: str, response: str):
-    """Record a chat interaction."""
+def insert_chat_log(session_id: str, message: str, response: str, tokens: int = 0, cost: float = 0.0):
+    """Record a chat interaction with token usage."""
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO chat_logs (session_id, message, response)
-        VALUES (?, ?, ?)
-    ''', (session_id, message, response))
+        INSERT INTO chat_logs (session_id, message, response, tokens_used, cost_usd)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (session_id, message, response, tokens, cost))
     conn.commit()
     conn.close()
+
+def insert_token_usage(model_name: str, input_tokens: int, output_tokens: int, cost: float):
+    """Record a model usage event for cost tracking."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO token_usage (model_name, input_tokens, output_tokens, total_tokens, cost_usd)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (model_name, input_tokens, output_tokens, input_tokens + output_tokens, cost))
+    conn.commit()
+    conn.close()
+
+def get_total_cost() -> Dict[str, Any]:
+    """Calculate aggregate token usage and cost."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT 
+            SUM(total_tokens) as total_tokens, 
+            SUM(cost_usd) as total_cost 
+        FROM token_usage
+    ''')
+    row = cursor.fetchone()
+    conn.close()
+    return {
+        "total_tokens": row['total_tokens'] or 0,
+        "total_cost": row['total_cost'] or 0.0
+    }
 
 def get_container_stats(container_id: str, limit: int = 100) -> List[Dict[str, Any]]:
     """Retrieve historical stats for a container."""

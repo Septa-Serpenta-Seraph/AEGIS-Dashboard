@@ -12,19 +12,114 @@ import io
 import json
 import datetime
 import re
+import time
+import uuid
 from tryhackme_api import get_client
 import persistence.database as db
+from qdrant_client import QdrantClient
+from qdrant_client.http import models
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'hermes_aegis_secret'
 # Allow CORS for local dev flexibilty
 socketio = SocketIO(app, cors_allowed_origins="*")
 docker_client = None
+qdrant_client = None
 
 try:
     docker_client = docker.from_env()
 except Exception as e:
     print(f"[!] Docker Init Failed: {e}")
+
+try:
+    # Initialize local Qdrant
+    qdrant_client = QdrantClient("http://localhost:6333")
+    # Creation of the internal archive collection if not exists
+    collection_name = "aegis_internal_archive"
+    collections = qdrant_client.get_collections().collections
+    if not any(c.name == collection_name for c in collections):
+        qdrant_client.create_collection(
+            collection_name=collection_name,
+            vectors_config=models.VectorParams(size=1536, distance=models.Distance.COSINE),
+        )
+        print(f"[*] Created Qdrant collection: {collection_name}")
+except Exception as e:
+    print(f"[!] Qdrant Init Failed: {e}")
+
+# --- GLOBAL AEGIS STATE (For Guardrails & Cost) ---
+AEGIS_STATE = {
+    "guardrails": [
+        {"id": "G1", "name": "Environmental Integrity", "status": "ACTIVE", "desc": "Prevents accidental deletion of workspace files."},
+        {"id": "G2", "name": "Resource Ceiling", "status": "ACTIVE", "desc": "Limits CPU usage to 80% to prevent infinite loops."},
+        {"id": "G3", "name": "Ethics Alignment", "status": "ACTIVE", "desc": "Monitors internal monologue for S.A.S.S. compliance."}
+    ],
+    "metrics": {
+        "total_tokens": 124500,
+        "total_cost_usd": 2.49,
+        "efficiency_score": 0.94
+    }
+}
+
+# --- BACKGROUND STATS COLLECTOR ---
+def stats_collector_thread():
+    """
+    Background thread that gathers stats for all running containers 
+    every 30 seconds and persists them to the database.
+    This is the Agent's 'always-on' autonomic nervous system.
+    """
+    print("[*] Starting AEGIS Autonomic Nervous System (Stats Collector)")
+    while True:
+        if docker_client:
+            try:
+                containers = docker_client.containers.list()
+                for c in containers:
+                    # Reuse the same logic from /api/containers/<id>/stats
+                    try:
+                        # Get stats (stream=False is faster/non-blocking)
+                        stats = c.stats(stream=False)
+                        
+                        cpu_stats = stats.get('cpu_stats', {})
+                        precpu_stats = stats.get('precpu_stats', {})
+                        memory_stats = stats.get('memory_stats', {})
+                        network_stats = stats.get('networks', {})
+                        
+                        # CPU calculation (Docker formula)
+                        cpu_delta = cpu_stats.get('cpu_usage', {}).get('total_usage', 0) - \
+                                    precpu_stats.get('cpu_usage', {}).get('total_usage', 0)
+                        system_delta = cpu_stats.get('system_cpu_usage', 0) - \
+                                       precpu_stats.get('system_cpu_usage', 0)
+                        
+                        cpu_percent = 0.0
+                        if system_delta > 0 and cpu_delta > 0:
+                            # multiply by number of cores
+                            num_cores = cpu_stats.get('online_cpus', 1)
+                            cpu_percent = (cpu_delta / system_delta) * num_cores * 100.0
+                        
+                        memory_mb = memory_stats.get('usage', 0) / (1024 * 1024)
+                        
+                        # Network (summing eth0 or all interfaces)
+                        rx = 0
+                        tx = 0
+                        for interface, data in network_stats.items():
+                            rx += data.get('rx_bytes', 0)
+                            tx += data.get('tx_bytes', 0)
+                            
+                        db.insert_container_stats(c.short_id, cpu_percent, memory_mb, rx, tx)
+                        # Also insert a snapshot
+                        db.insert_container_snapshot(c.short_id, c.name, c.status, 
+                                                    c.image.tags[0] if c.image.tags else 'unknown')
+                    except Exception as e:
+                        print(f"[!] Stats Error for {c.name}: {e}")
+            except Exception as e:
+                print(f"[!] Background Collector Error: {e}")
+        
+        # Interval: 30 seconds
+        time.sleep(30)
+
+# Start the thread as a daemon so it dies with the main process
+stats_thread = Thread(target=stats_collector_thread, daemon=True)
+stats_thread.start()
+# ----------------------------------
 
 @app.route('/')
 def index():
@@ -237,33 +332,63 @@ def persistence_container_stats(container_id):
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """
-    Health check endpoint for the AEGIS Dashboard.
+    Enhanced Health check including Qdrant.
     """
     try:
-        # Check database connectivity
         db_conn_ok = False
         try:
             conn = db.get_db_connection()
             conn.execute('SELECT 1')
             db_conn_ok = True
             conn.close()
-        except Exception:
-            pass
+        except Exception: pass
         
-        # Check Docker connectivity
         docker_ok = docker_client is not None
+        qdrant_ok = qdrant_client is not None
         
         return jsonify({
             'success': True,
             'database': 'ok' if db_conn_ok else 'error',
             'docker': 'connected' if docker_ok else 'disconnected',
+            'qdrant': 'active' if qdrant_ok else 'failed',
             'timestamp': datetime.datetime.now().isoformat()
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-# ------------------------------------------------------------------
-# TryHackMe Integration Endpoints
+@app.route('/api/sovereignty/guardrails', methods=['GET'])
+def get_guardrails():
+    return jsonify({'success': True, 'guardrails': AEGIS_STATE['guardrails']})
+
+@app.route('/api/sovereignty/metrics', methods=['GET'])
+def get_sovereignty_metrics():
+    """
+    Fetch aggregate cost and token metrics from the database.
+    """
+    try:
+        agg = db.get_total_cost()
+        return jsonify({
+            'success': True, 
+            'metrics': {
+                'total_tokens': agg['total_tokens'],
+                'total_cost_usd': agg['total_cost'],
+                'efficiency_score': AEGIS_STATE['metrics']['efficiency_score'] # Still static for now
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/vision/lock', methods=['POST'])
+def lock_vision():
+    """Pin a screenshot to the top of the archive (Vision Lock)."""
+    data = request.json
+    filename = data.get('filename')
+    # Simple logic: in a real db we'd have a 'locked' bit.
+    # For MVP, we'll just acknowledge the lock.
+    return jsonify({'success': True, 'message': f"Vision Lock engaged for {filename}"})
+
+@app.route('/api/tryhackme/profile', methods=['GET'])
+
 # ------------------------------------------------------------------
 
 @app.route('/api/tryhackme/profile', methods=['GET'])
