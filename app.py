@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from flask_socketio import SocketIO
 from playwright.sync_api import sync_playwright
 import base64
@@ -29,6 +29,10 @@ except Exception as e:
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/data/screenshots/<filename>')
+def serve_screenshot(filename):
+    return send_from_directory('data/screenshots', filename)
 
 @app.route('/api/vision/scan', methods=['POST'])
 def scan_url():

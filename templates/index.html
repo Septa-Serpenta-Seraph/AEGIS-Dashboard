@@ -116,19 +116,40 @@
 
             <!-- Tabs -->
             <div class="flex border-b border-gray-800 text-xs">
-                <button onclick="switchTab('vision')" class="flex-1 py-1 bg-gray-900 text-gray-300 hover:bg-gray-800 border-r border-gray-800">Vision</button>
-                <button onclick="switchTab('chat')" class="flex-1 py-1 bg-black text-gray-500 hover:text-white">Supervisor</button>
+                <button onclick="switchTab('vision')" class="flex-1 py-1 bg-gray-900 text-gray-300 hover:bg-gray-800 border-r border-gray-800" id="tab-vision">Vision</button>
+                <button onclick="switchTab('persistence')" class="flex-1 py-1 bg-black text-gray-500 hover:text-white border-r border-gray-800" id="tab-persistence">Persistence</button>
+                <button onclick="switchTab('chat')" class="flex-1 py-1 bg-black text-gray-500 hover:text-white" id="tab-chat">Supervisor</button>
             </div>
 
             <!-- Vision Display / Chat Display Container -->
             <div class="flex-1 relative overflow-hidden">
                 
                 <!-- Vision View -->
-                <div id="vision-view" class="absolute inset-0 bg-black p-2 flex items-center justify-center">
+                <div id="vision-view" class="absolute inset-0 bg-black p-2 flex flex-col items-center justify-center">
                     <div class="text-gray-700 text-xs text-center" id="vision-display">
-                <div class="text-gray-700 text-xs text-center">
-                    NO SIGNAL<br>Waiting for input...
+                        NO SIGNAL<br>Waiting for input...
+                    </div>
                 </div>
+
+                <!-- Persistence View (New) -->
+                <div id="persistence-view" class="absolute inset-0 bg-[#050505] hidden flex flex-col p-2 space-y-4 overflow-y-auto">
+                    <div class="border border-gray-800 p-2">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest">Container History</span>
+                            <button onclick="loadPersistenceData()" class="text-[10px] text-blue-500 hover:underline">REFRESH</button>
+                        </div>
+                        <div id="container-history-list" class="text-[10px] font-mono space-y-1">
+                            <!-- Injected snapshots -->
+                            <div class="text-gray-700 italic">No snapshots found...</div>
+                        </div>
+                    </div>
+                    
+                    <div class="border border-gray-800 p-2">
+                        <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest block mb-2">Historical Screenshots</span>
+                        <div id="screenshot-history-list" class="grid grid-cols-2 gap-2 text-[10px]">
+                            <!-- Injected screenshots -->
+                            <div class="col-span-2 text-gray-700 italic">No screenshots archived...</div>
+                        </div>
                     </div>
                 </div>
 
@@ -228,12 +249,65 @@
         }
 
         function switchTab(tab) {
-            if(tab === 'vision') {
-                document.getElementById('vision-view').classList.remove('hidden');
-                document.getElementById('chat-view').classList.add('hidden');
-            } else {
-                document.getElementById('vision-view').classList.add('hidden');
-                document.getElementById('chat-view').classList.remove('hidden');
+            // Views
+            const views = ['vision-view', 'persistence-view', 'chat-view'];
+            views.forEach(v => document.getElementById(v).classList.add('hidden'));
+            
+            // Highlight buttons
+            const buttons = ['tab-vision', 'tab-persistence', 'tab-chat'];
+            buttons.forEach(b => {
+                document.getElementById(b).classList.add('bg-black', 'text-gray-500');
+                document.getElementById(b).classList.remove('bg-gray-900', 'text-gray-300', 'text-white');
+            });
+
+            // Activate current
+            document.getElementById(tab + '-view').classList.remove('hidden');
+            const activeBtn = document.getElementById('tab-' + tab);
+            activeBtn.classList.remove('bg-black', 'text-gray-500');
+            activeBtn.classList.add('bg-gray-900', 'text-white');
+
+            if (tab === 'persistence') {
+                loadPersistenceData();
+            }
+        }
+
+        async function loadPersistenceData() {
+            try {
+                // Load Containers History
+                const contRes = await fetch('/api/persistence/containers/history?limit=10');
+                const contData = await contRes.json();
+                const contList = document.getElementById('container-history-list');
+
+                if (contData.success && contData.snapshots.length > 0) {
+                    contList.innerHTML = contData.snapshots.map(s => `
+                        <div class="flex justify-between border-b border-gray-900/50 py-1">
+                            <span class="text-gray-400">${s.name}</span>
+                            <span class="text-blue-500">${s.status}</span>
+                            <span class="text-gray-600">${new Date(s.timestamp).toLocaleTimeString()}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    contList.innerHTML = '<div class="text-gray-700 italic">No historical snapshots indexed.</div>';
+                }
+
+                // Load Screenshots
+                const screenRes = await fetch('/api/persistence/screenshots?limit=4');
+                const screenData = await screenRes.json();
+                const screenList = document.getElementById('screenshot-history-list');
+
+                if (screenData.success && screenData.screenshots.length > 0) {
+                    screenList.innerHTML = screenData.screenshots.map(s => `
+                        <div class="border border-gray-800 bg-black">
+                             <img src="/data/screenshots/${s.filename}" class="w-full h-auto opacity-70 hover:opacity-100 transition-opacity">
+                             <div class="p-1 text-[8px] text-gray-600 truncate">${s.url}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    screenList.innerHTML = '<div class="col-span-2 text-gray-700 italic text-center">No visual archives found.</div>';
+                }
+
+            } catch (e) {
+                console.error("Persistence load failed", e);
             }
         }
 
