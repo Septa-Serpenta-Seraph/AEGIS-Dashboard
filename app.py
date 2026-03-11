@@ -20,9 +20,13 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', os.urandom(24).hex())
-# CORS: restrict to localhost in production, allow all only in dev
-_cors_origins = "*" if os.getenv('FLASK_ENV') == 'development' else [
+_secret = os.getenv('FLASK_SECRET_KEY')
+if not _secret:
+    _secret = os.urandom(24).hex()
+    print("[!] WARNING: FLASK_SECRET_KEY not set — using ephemeral key (sessions will break on restart)")
+app.config['SECRET_KEY'] = _secret
+# CORS: restrict to localhost only
+_cors_origins = [
     "http://localhost:5000", "http://127.0.0.1:5000"
 ]
 socketio = SocketIO(app, cors_allowed_origins=_cors_origins)
