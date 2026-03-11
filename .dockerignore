@@ -1,0 +1,28 @@
+# Secrets — never bake into images
+.env
+.env.*
+!.env.example
+
+# Version control
+.git/
+.gitignore
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+venv/
+
+# Data (mount at runtime, don't bake)
+data/
+*.db
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Backups
+*.bak

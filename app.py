@@ -20,9 +20,12 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'hermes_aegis_secret'
-# Allow CORS for local dev flexibilty
-socketio = SocketIO(app, cors_allowed_origins="*")
+app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY', os.urandom(24).hex())
+# CORS: restrict to localhost in production, allow all only in dev
+_cors_origins = "*" if os.getenv('FLASK_ENV') == 'development' else [
+    "http://localhost:5000", "http://127.0.0.1:5000"
+]
+socketio = SocketIO(app, cors_allowed_origins=_cors_origins)
 docker_client = None
 qdrant_client = None
 
@@ -121,6 +124,30 @@ stats_thread = Thread(target=stats_collector_thread, daemon=True)
 stats_thread.start()
 # ----------------------------------
 
+# --- AUTH MIDDLEWARE ---
+# Set AEGIS_API_TOKEN in .env to require token auth on all API endpoints.
+# Pass token via header: Authorization: Bearer <token>
+# The dashboard UI (/) is exempt so the browser can load the page.
+_AEGIS_TOKEN = os.getenv('AEGIS_API_TOKEN')
+
+@app.before_request
+def _check_auth():
+    if not _AEGIS_TOKEN:
+        return  # No token configured — open access (dev mode)
+    # Allow the dashboard HTML and static assets without auth
+    if request.path == '/' or request.path.startswith('/static') or request.path.startswith('/socket.io'):
+        return
+    # Check Bearer token on all /api/ routes
+    if request.path.startswith('/api/') or request.path.startswith('/data/'):
+        auth = request.headers.get('Authorization', '')
+        if auth == f'Bearer {_AEGIS_TOKEN}':
+            return
+        # Also accept ?token= query param for simple browser testing
+        if request.args.get('token') == _AEGIS_TOKEN:
+            return
+        return jsonify({'error': 'Unauthorized — set Authorization: Bearer <token>'}), 401
+# --- END AUTH ---
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -140,6 +167,19 @@ def scan_url():
     url = data.get('url')
     if not url:
         return jsonify({'error': 'No URL provided'}), 400
+
+    # --- SSRF Protection: only allow http/https to public hosts ---
+    from urllib.parse import urlparse
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return jsonify({'error': 'Invalid URL'}), 400
+    if parsed.scheme not in ('http', 'https'):
+        return jsonify({'error': f'Blocked scheme: {parsed.scheme} — only http/https allowed'}), 400
+    hostname = (parsed.hostname or '').lower()
+    _blocked = ('localhost', '127.0.0.1', '0.0.0.0', '169.254.169.254', '[::1]', 'metadata.google.internal')
+    if hostname in _blocked or hostname.startswith('10.') or hostname.startswith('172.') or hostname.startswith('192.168.'):
+        return jsonify({'error': f'Blocked internal/private host: {hostname}'}), 403
 
     print(f"[*] AEGIS Vision Scanning: {url}")
     try:
@@ -189,8 +229,7 @@ def scan_url():
                 'image': f"data:image/png;base64,{b64_img}",
                 'message': f"Successfully scanned {url}",
                 'persisted': True,
-                'extracted_text': extracted_text,
-                'filepath': filepath
+                'extracted_text': extracted_text
             })
     except Exception as e:
         print(f"[!] Vision Error: {e}")
@@ -624,4 +663,11 @@ def visualize_metrics():
 
 if __name__ == '__main__':
     # Listen on all interfaces so we can access it from host
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)
+    is_dev = os.getenv('FLASK_ENV') == 'development'
+    socketio.run(
+        app,
+        host='0.0.0.0',
+        port=5000,
+        debug=is_dev,
+        allow_unsafe_werkzeug=is_dev,
+    )
