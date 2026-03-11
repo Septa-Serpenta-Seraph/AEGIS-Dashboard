@@ -3,6 +3,7 @@ from discord.ext import commands
 import requests
 import os
 import base64
+import asyncio
 from io import BytesIO
 from dotenv import load_dotenv
 
@@ -25,7 +26,7 @@ async def on_ready():
 async def status(ctx):
     """Check if the AEGIS Dashboard API is reachable."""
     try:
-        response = requests.get(f"{DASHBOARD_URL}/")
+        response = await asyncio.to_thread(requests.get, f"{DASHBOARD_URL}/")
         if response.status_code == 200:
             await ctx.send("✅ **AEGIS Dashboard is online.** Systems nominal.")
         else:
@@ -37,7 +38,7 @@ async def status(ctx):
 async def list_containers(ctx):
     """List running Docker containers in the Sandbox."""
     try:
-        response = requests.get(f"{DASHBOARD_URL}/api/containers")
+        response = await asyncio.to_thread(requests.get, f"{DASHBOARD_URL}/api/containers")
         data = response.json()
         
         if not data.get('success'):
@@ -71,7 +72,7 @@ async def scan_url(ctx, url: str, extract: bool = False):
     await ctx.send(msg)
     
     try:
-        response = requests.post(f"{DASHBOARD_URL}/api/vision/scan", json={'url': url, 'extract': extract})
+        response = await asyncio.to_thread(requests.post, f"{DASHBOARD_URL}/api/vision/scan", json={'url': url, 'extract': extract})
         data = response.json()
         
         if not data.get('success'):
@@ -98,7 +99,7 @@ async def scan_url(ctx, url: str, extract: bool = False):
 async def chat_supervisor(ctx, *, message: str):
     """Chat with the AEGIS Supervisor Agent."""
     try:
-        response = requests.post(f"{DASHBOARD_URL}/api/supervisor/chat", json={'message': message})
+        response = await asyncio.to_thread(requests.post, f"{DASHBOARD_URL}/api/supervisor/chat", json={'message': message})
         data = response.json()
         
         if not data.get('success'):

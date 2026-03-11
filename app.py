@@ -325,9 +325,7 @@ def create_context():
 def get_context_note(note_id):
     """Retrieve a specific context note by ID."""
     try:
-        # We'll reuse get_context_notes with a limit and filter manually by ID
-        notes = db.get_context_notes(limit=1000)  # fetch more to find by ID
-        note = next((n for n in notes if n['id'] == note_id), None)
+        note = db.get_context_note_by_id(note_id)
         if note:
             return jsonify({'success': True, 'note': note})
         else:
@@ -391,14 +389,18 @@ def container_stats(container_id):
         
         # Parse Docker stats format
         cpu_stats = stats.get('cpu_stats', {})
+        precpu_stats = stats.get('precpu_stats', {})
         memory_stats = stats.get('memory_stats', {})
         network_stats = stats.get('networks', {})
         
-        cpu_delta = cpu_stats.get('cpu_usage', {}).get('total_usage', 0)
-        system_delta = cpu_stats.get('system_cpu_usage', 0)
+        cpu_delta = cpu_stats.get('cpu_usage', {}).get('total_usage', 0) - \
+                    precpu_stats.get('cpu_usage', {}).get('total_usage', 0)
+        system_delta = cpu_stats.get('system_cpu_usage', 0) - \
+                       precpu_stats.get('system_cpu_usage', 0)
         cpu_percent = 0.0
-        if system_delta > 0:
-            cpu_percent = (cpu_delta / system_delta) * 100.0
+        if system_delta > 0 and cpu_delta > 0:
+            num_cores = cpu_stats.get('online_cpus', 1)
+            cpu_percent = (cpu_delta / system_delta) * num_cores * 100.0
         
         memory_mb = memory_stats.get('usage', 0) / (1024 * 1024)  # bytes to MB
         network_rx = network_stats.get('eth0', {}).get('rx_bytes', 0)
@@ -491,10 +493,6 @@ def lock_vision():
     # Simple logic: in a real db we'd have a 'locked' bit.
     # For MVP, we'll just acknowledge the lock.
     return jsonify({'success': True, 'message': f"Vision Lock engaged for {filename}"})
-
-@app.route('/api/tryhackme/profile', methods=['GET'])
-
-# ------------------------------------------------------------------
 
 @app.route('/api/tryhackme/profile', methods=['GET'])
 def tryhackme_profile():
