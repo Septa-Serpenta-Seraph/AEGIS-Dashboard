@@ -1,0 +1,22 @@
+{
+  "timestamp": "2026-03-11T23:15:00Z",
+  "session": "2026-03-11",
+  "model": "openrouter/hunter-alpha",
+  "completed": [
+    "AEGIS security hardening merged to main",
+    "Compression disabled in config.yaml",
+    "Hunter Alpha model active",
+    "GH CLI authenticated",
+    "/collect-secret command added",
+    "Guild sync logic implemented"
+  ],
+  "critical_pending": [
+    "Gateway sync bug: _register_slash_commands runs AFTER tree.sync()",
+    "Gateway not reloading Python code on restart",
+    "Duplicate /collect-secret in Discord",
+    "Username/Password types not syncing to Discord"
+  ],
+  "fix_needed": "Move _register_slash_commands() before tree.sync() in on_ready() in discord.py",
+  "guild_id": "1387534334067736699",
+  "note_file": "~/.hermes/SESSION_NOTES_2026-03-11.md"
+}
