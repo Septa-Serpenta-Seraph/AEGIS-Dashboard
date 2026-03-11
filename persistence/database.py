@@ -221,5 +221,57 @@ def get_recent_snapshots(limit: int = 100) -> List[Dict[str, Any]]:
     conn.close()
     return [dict(row) for row in rows]
 
+# --- Context Persistence (for critical info across wipes) ---
+def init_context_table():
+    """Create context_notes table if not exists."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS context_notes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            category TEXT NOT NULL,
+            key TEXT NOT NULL,
+            value TEXT,
+            metadata TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+    print("[*] Context persistence table ready")
+
+def insert_context_note(category: str, key: str, value: str, metadata: Optional[str] = None):
+    """Store a critical piece of information."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO context_notes (category, key, value, metadata)
+        VALUES (?, ?, ?, ?)
+    ''', (category, key, value, metadata))
+    conn.commit()
+    conn.close()
+
+def get_context_notes(category: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
+    """Retrieve context notes, optionally filtered by category."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    if category:
+        cursor.execute('''
+            SELECT * FROM context_notes
+            WHERE category = ?
+            ORDER BY timestamp DESC
+            LIMIT ?
+        ''', (category, limit))
+    else:
+        cursor.execute('''
+            SELECT * FROM context_notes
+            ORDER BY timestamp DESC
+            LIMIT ?
+        ''', (limit,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
 # Initialize on import
 init_db()
+init_context_table()
