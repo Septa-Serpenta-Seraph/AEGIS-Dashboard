@@ -272,6 +272,16 @@ def get_context_notes(category: Optional[str] = None, limit: int = 50) -> List[D
     conn.close()
     return [dict(row) for row in rows]
 
+def delete_context_note(note_id: int) -> bool:
+    """Delete a context note by ID. Returns True if deleted."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM context_notes WHERE id = ?', (note_id,))
+    conn.commit()
+    deleted = cursor.rowcount > 0
+    conn.close()
+    return deleted
+
 # Initialize on import
 init_db()
 init_context_table()

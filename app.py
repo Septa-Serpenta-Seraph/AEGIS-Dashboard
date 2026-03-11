@@ -244,6 +244,72 @@ def persistence_screenshots():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+
+@app.route('/api/context', methods=['GET'])
+def get_context():
+    """
+    Retrieve context notes for rolling persistence across wipes.
+    Optional query param: category=xxx
+    """
+    try:
+        category = request.args.get('category')
+        limit = request.args.get('limit', default=50, type=int)
+        notes = db.get_context_notes(category=category, limit=limit)
+        return jsonify({'success': True, 'notes': notes})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/context', methods=['POST'])
+def create_context():
+    """
+    Store a new context note.
+    Required JSON: {category, key, value, metadata?}
+    """
+    try:
+        data = request.json
+        category = data.get('category')
+        key = data.get('key')
+        value = data.get('value')
+        metadata = data.get('metadata')
+        
+        if not category or not key or not value:
+            return jsonify({'success': False, 'error': 'Missing required fields: category, key, value'}), 400
+            
+        db.insert_context_note(category, key, value, metadata)
+        return jsonify({'success': True, 'message': 'Context note stored'}), 201
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/context/<int:note_id>', methods=['GET'])
+def get_context_note(note_id):
+    """Retrieve a specific context note by ID."""
+    try:
+        # We'll reuse get_context_notes with a limit and filter manually by ID
+        notes = db.get_context_notes(limit=1000)  # fetch more to find by ID
+        note = next((n for n in notes if n['id'] == note_id), None)
+        if note:
+            return jsonify({'success': True, 'note': note})
+        else:
+            return jsonify({'success': False, 'error': 'Note not found'}), 404
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/context/<int:note_id>', methods=['DELETE'])
+def delete_context_note(note_id):
+    """Delete a context note by ID."""
+    try:
+        deleted = db.delete_context_note(note_id)
+        if deleted:
+            return jsonify({'success': True, 'message': f'Note {note_id} deleted'}), 200
+        else:
+            return jsonify({'success': False, 'error': 'Note not found'}), 404
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/api/containers', methods=['GET'])
 def list_containers():
     """
