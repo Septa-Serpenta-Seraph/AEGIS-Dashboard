@@ -238,7 +238,7 @@
                 </div>
 
                 <!-- Chat View (Hidden by default) -->
-                <div id="chat-view" class="absolute inset-0 bg-gray-900 hidden flex flex-col">
+                <div id="chat-view" class="absolute inset-0 bg-gray-900 hidden flex-col">
                     <div id="chat-history" class="flex-1 p-2 space-y-2 overflow-y-auto text-xs font-mono">
                         <div class="text-green-500">[SYSTEM] Supervisor Online.</div>
                     </div>
@@ -341,9 +341,12 @@
         }
 
         function switchTab(tab) {
-            // Views
+            // Views — hide all, then show the target
             const views = ['vision-view', 'persistence-view', 'autonomy-view', 'chat-view'];
-            views.forEach(v => document.getElementById(v).classList.add('hidden'));
+            views.forEach(v => {
+                const el = document.getElementById(v);
+                el.style.display = 'none';
+            });
             
             // Highlight buttons
             const buttons = ['tab-vision', 'tab-persistence', 'tab-autonomy', 'tab-chat'];
@@ -352,8 +355,9 @@
                 document.getElementById(b).classList.remove('bg-gray-900', 'text-gray-300', 'text-white');
             });
 
-            // Activate current
-            document.getElementById(tab + '-view').classList.remove('hidden');
+            // Activate current view
+            const activeView = document.getElementById(tab + '-view');
+            activeView.style.display = 'flex';
             const activeBtn = document.getElementById(tab === 'persistence' ? 'tab-persistence' : 'tab-' + tab);
             activeBtn.classList.remove('bg-black', 'text-gray-500');
             activeBtn.classList.add('bg-gray-900', 'text-white');
