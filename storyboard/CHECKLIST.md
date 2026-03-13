@@ -11,8 +11,9 @@
 - [ ] Exterior shots: Adora & Tyler outside (portrait orientation)
 - [ ] Lumi at work: screen recording or photo of her project
 - [ ] Adora at desk: typing, looking at dashboard
-- [ ] Dashboard screen‑record (full walk‑through, all tabs)
-- [ ] Terminal footage: `hermes` commands, `git log`, Qdrant queries
+- [x] Dashboard screen‑record (full walk‑through, all tabs) ✅ Playwright auto-recorded
+- [x] Terminal footage: `hermes` commands, `git log`, Qdrant queries ✅ Playwright styled terminal
+- [x] Live demo: Network recon + Why AEGIS ✅ Recorded + sent to Discord
 - [ ] Abstract Qdrant visualization (if possible)
 
 ### Audio

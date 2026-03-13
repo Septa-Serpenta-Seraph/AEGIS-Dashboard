@@ -41,7 +41,7 @@
             <span class="text-xs text-gray-500 uppercase">Daemon Protocol v4.1</span>
         </div>
         <div class="text-xs text-gray-600">
-            STATUS: <span class="text-green-500">CONNECTED</span> | VM: LUMI | MODE: SOVEREIGN
+            STATUS: <span class="text-green-500">CONNECTED</span> | VM: LOCAL | MODE: SOVEREIGN
         </div>
     </header>
 
@@ -87,8 +87,8 @@
             
             <!-- Metrics (Placeholder) -->
             <div class="h-12 terminal-box p-2 flex items-center justify-between px-4 text-xs text-gray-600">
-                <span>CPU: <span class="text-green-500">2%</span></span>
-                <span>MEM: <span class="text-green-500">128MB</span></span>
+                <span>CPU: <span id="cpu-stat" class="text-green-500">—</span></span>
+                <span>MEM: <span id="mem-stat" class="text-green-500">—</span></span>
                 <span>NET: <span class="text-blue-500">UP</span></span>
             </div>
         </div>
@@ -118,7 +118,7 @@
             <div class="flex border-b border-gray-800 text-xs text-[10px]">
                 <button onclick="switchTab('vision')" class="flex-1 py-1 bg-gray-900 text-gray-300 hover:bg-gray-800 border-r border-gray-800" id="tab-vision">Vision</button>
                 <button onclick="switchTab('persistence')" class="flex-1 py-1 bg-black text-gray-500 hover:text-white border-r border-gray-800" id="tab-persistence">Memory</button>
-                <button onclick="switchTab('sovereignty')" class="flex-1 py-1 bg-black text-gray-500 hover:text-white border-r border-gray-800" id="tab-sovereignty">Sovereignty</button>
+                <button onclick="switchTab('autonomy')" class="flex-1 py-1 bg-black text-gray-500 hover:text-white border-r border-gray-800" id="tab-autonomy">Autonomy</button>
                 <button onclick="switchTab('chat')" class="flex-1 py-1 bg-black text-gray-500 hover:text-white" id="tab-chat">Supervisor</button>
             </div>
 
@@ -193,9 +193,32 @@
                     </div>
                 </div>
 
-                <!-- Sovereignty View -->
-                <div id="sovereignty-view" class="absolute inset-0 bg-[#0a0a0a] hidden flex flex-col p-2 space-y-4 overflow-y-auto">
-                    <!-- Efficiency & Cost -->
+                <!-- Autonomy View -->
+                <div id="autonomy-view" class="absolute inset-0 bg-[#0a0a0a] hidden flex flex-col p-2 space-y-4 overflow-y-auto">
+                    <!-- Model <!-- Efficiency & Cost --> Credits -->
+                    <div class="border border-gray-800 p-2 bg-black">
+                        <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest block mb-2">Active Model &amp; Credits</span>
+                        <div class="grid grid-cols-4 gap-2 text-[10px] font-mono">
+                            <div class="p-2 bg-gray-900 border border-gray-800">
+                                <div class="text-gray-600 text-[8px]">MODEL</div>
+                                <div id="model-name" class="text-purple-400 text-[9px]">loading...</div>
+                            </div>
+                            <div class="p-2 bg-gray-900 border border-gray-800">
+                                <div class="text-gray-600 text-[8px]">PROVIDER</div>
+                                <div id="model-provider" class="text-blue-400">--</div>
+                            </div>
+                            <div class="p-2 bg-gray-900 border border-gray-800">
+                                <div class="text-gray-600 text-[8px]">CREDITS LEFT</div>
+                                <div id="credits-remaining" class="text-green-500">--</div>
+                            </div>
+                            <div class="p-2 bg-gray-900 border border-gray-800">
+                                <div class="text-gray-600 text-[8px]">GATEWAY</div>
+                                <div id="gateway-status" class="text-yellow-500">--</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Efficiency <!-- Efficiency & Cost --> Cost -->
                     <div class="border border-gray-800 p-2 bg-black">
                         <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest block mb-2">Efficiency & Cost</span>
                         <div class="grid grid-cols-3 gap-2 text-[10px] font-mono">
@@ -205,11 +228,11 @@
                             </div>
                             <div class="p-2 bg-gray-900 border border-gray-800">
                                 <div class="text-gray-600 text-[8px]">TOTAL COST</div>
-                                <div id="cost-usd" class="text-green-500">$2.49</div>
+                                <div id="cost-usd" class="text-green-500">loading...</div>
                             </div>
                             <div class="p-2 bg-gray-900 border border-gray-800">
                                 <div class="text-gray-600 text-[8px]">EFFICIENCY</div>
-                                <div id="efficiency-score" class="text-blue-400">94%</div>
+                                <div id="efficiency-score" class="text-blue-400">—</div>
                             </div>
                         </div>
                     </div>
@@ -328,11 +351,11 @@
 
         function switchTab(tab) {
             // Views
-            const views = ['vision-view', 'persistence-view', 'sovereignty-view', 'chat-view'];
+            const views = ['vision-view', 'persistence-view', 'autonomy-view', 'chat-view'];
             views.forEach(v => document.getElementById(v).classList.add('hidden'));
             
             // Highlight buttons
-            const buttons = ['tab-vision', 'tab-persistence', 'tab-sovereignty', 'tab-chat'];
+            const buttons = ['tab-vision', 'tab-persistence', 'tab-autonomy', 'tab-chat'];
             buttons.forEach(b => {
                 document.getElementById(b).classList.add('bg-black', 'text-gray-500');
                 document.getElementById(b).classList.remove('bg-gray-900', 'text-gray-300', 'text-white');
@@ -346,15 +369,15 @@
 
             if (tab === 'persistence') {
                 loadPersistenceData();
-            } else if (tab === 'sovereignty') {
-                loadSovereigntyData();
+            } else if (tab === 'autonomy') {
+                loadAutonomyData();
             }
         }
 
-        async function loadSovereigntyData() {
+        async function loadAutonomyData() {
             try {
                 // Load Metrics
-                const metRes = await fetch('/api/sovereignty/metrics');
+                const metRes = await fetch('/api/autonomy/metrics');
                 const metData = await metRes.json();
                 if (metData.success) {
                     document.getElementById('cost-tokens').innerText = (metData.metrics.total_tokens / 1000).toFixed(1) + 'k';
@@ -363,7 +386,7 @@
                 }
 
                 // Load Guardrails
-                const guardRes = await fetch('/api/sovereignty/guardrails');
+                const guardRes = await fetch('/api/autonomy/guardrails');
                 const guardData = await guardRes.json();
                 const guardList = document.getElementById('guardrail-list');
                 if (guardData.success) {
@@ -377,7 +400,35 @@
                         </div>
                     `).join('');
                 }
-            } catch (e) { console.error("Sovereignty load failed", e); }
+                
+                // Load Model & Credits
+                try {
+                    const modelRes = await fetch('/api/autonomy/model');
+                    const modelData = await modelRes.json();
+                    if (modelData.success) {
+                        document.getElementById('model-name').innerText = modelData.model.configured.split('/').pop() || modelData.model.configured;
+                        document.getElementById('model-provider').innerText = modelData.model.provider;
+                        if (modelData.credits) {
+                            if (modelData.credits.remaining_usd !== null) {
+                                document.getElementById('credits-remaining').innerText = '$' + modelData.credits.remaining_usd.toFixed(2);
+                            } else if (modelData.credits.is_free_tier) {
+                                document.getElementById('credits-remaining').innerText = 'FREE';
+                            } else {
+                                document.getElementById('credits-remaining').innerText = '$' + modelData.credits.usage_usd.toFixed(2) + ' used';
+                            }
+                        } else {
+                            document.getElementById('credits-remaining').innerText = 'N/A';
+                        }
+                        if (modelData.gateway.running) {
+                            document.getElementById('gateway-status').innerText = 'ON ' + (modelData.gateway.uptime || '');
+                            document.getElementById('gateway-status').className = 'text-green-500';
+                        } else {
+                            document.getElementById('gateway-status').innerText = 'OFF';
+                            document.getElementById('gateway-status').className = 'text-red-500';
+                        }
+                    }
+                } catch (e) { console.error('Model load failed', e); }
+            } catch (e) { console.error("Autonomy load failed", e); }
         }
 
         async function lockVision(filename) {
@@ -521,6 +572,98 @@
                 history.scrollTop = history.scrollHeight;
             }
         });
+
+        // === LIVE AUTONOMY METRICS ===
+        async function updateAutonomyMetrics() {
+            try {
+                const resp = await fetch('/api/autonomy/metrics');
+                if (!resp.ok) return;
+                const data = await resp.json();
+                if (!data.success) return;
+                
+                const metrics = data.metrics;
+                
+                // Update cost display
+                const costEl = document.getElementById('cost-usd');
+                if (costEl) {
+                    costEl.textContent = '$' + (metrics.total_cost_usd || 0).toFixed(4);
+                }
+                
+                // Update efficiency score if element exists
+                const effEl = document.getElementById('efficiency-score');
+                if (effEl) {
+                    effEl.textContent = ((metrics.efficiency_score || 0) * 100).toFixed(0) + '%';
+                }
+                
+                // Update tokens if element exists  
+                const tokensEl = document.getElementById('total-tokens');
+                if (tokensEl) {
+                    const tokens = metrics.total_tokens || 0;
+                    if (tokens > 1000000) {
+                        tokensEl.textContent = (tokens / 1000000).toFixed(1) + 'M';
+                    } else if (tokens > 1000) {
+                        tokensEl.textContent = (tokens / 1000).toFixed(1) + 'K';
+                    } else {
+                        tokensEl.textContent = tokens;
+                    }
+                }
+                
+                // Update source indicator
+                const sourceEl = document.getElementById('metrics-source');
+                if (sourceEl) {
+                    sourceEl.textContent = metrics.source === 'live' ? '🟢 Live' : '🟡 Local';
+                    sourceEl.title = 'Data source: ' + (metrics.source || 'unknown');
+                }
+            } catch (e) {
+                console.warn('Metrics fetch failed:', e);
+            }
+        }
+        
+        // === LIVE SYSTEM STATS ===
+        async function updateSystemStats() {
+            try {
+                const resp = await fetch('/api/containers');
+                if (!resp.ok) return;
+                const data = await resp.json();
+                
+                if (data.success && data.containers && data.containers.length > 0) {
+                    // Sum up CPU and memory from all containers
+                    let totalCpu = 0;
+                    let totalMemMb = 0;
+                    
+                    for (const container of data.containers) {
+                        const stats = container.latest_stats || {};
+                        if (stats.cpu_percent) totalCpu += stats.cpu_percent;
+                        if (stats.memory_mb) totalMemMb += stats.memory_mb;
+                    }
+                    
+                    const cpuEl = document.getElementById('cpu-stat');
+                    if (cpuEl) {
+                        cpuEl.textContent = totalCpu > 0 ? totalCpu.toFixed(1) + '%' : '< 1%';
+                        cpuEl.className = totalCpu > 80 ? 'text-red-500' : totalCpu > 50 ? 'text-yellow-500' : 'text-green-500';
+                    }
+                    
+                    const memEl = document.getElementById('mem-stat');
+                    if (memEl) {
+                        if (totalMemMb > 1024) {
+                            memEl.textContent = (totalMemMb / 1024).toFixed(1) + 'GB';
+                        } else if (totalMemMb > 0) {
+                            memEl.textContent = Math.round(totalMemMb) + 'MB';
+                        } else {
+                            memEl.textContent = '~180MB';
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('System stats fetch failed:', e);
+            }
+        }
+        
+        // Fetch all live data on load and on interval
+        updateAutonomyMetrics();
+        updateSystemStats();
+        setInterval(updateAutonomyMetrics, 30000);
+        setInterval(updateSystemStats, 10000);
     </script>
 </body>
 </html>

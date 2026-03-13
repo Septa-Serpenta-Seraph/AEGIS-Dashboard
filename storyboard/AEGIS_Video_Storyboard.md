@@ -8,14 +8,15 @@
 
 ---
 
-## SCENE 1: HOOK (0:00–0:15)
+## SCENE 1: HOOK (0:00–0:20)
 
 | Time | Visual | Audio | Notes |
 |------|--------|-------|-------|
-| 0:00 | **Black screen.** White text fades in: “What happens when AI agents aren’t employees… but collaborators?” | Ambient synth pad, low rumble. | Typing sound as text appears. |
-| 0:03 | **Quick cuts (0.5s each):**<br>1. Terminal with `hermes` command running.<br>2. AEGIS dashboard glowing (dark‑mode).<br>3. Adora’s hand typing on keyboard.<br>4. Tyler outside, smiling, holding phone.<br>5. Lumi’s screen with colorful code/game.<br>6. Qdrant memory fragment visualization (colorful vector clouds). | Each cut syncs with a soft “blip” sound. Music begins—uplifting melody with driving beat. | Establish parallel lives: human + AI, all creating. |
-| 0:10 | **Final quick cut:** Split‑screen of all four “actors” (Adora, Tyler, Lumi, Narusya terminal) looking toward camera (or screen). | Music swells slightly. | |
-| 0:13 | **Title card:** “AEGIS – Sovereign Daemon Protocol” (stylized, hacker‑font). | Voiceover (Adora): *“This is AEGIS. And this is how we built it.”* | Voiceover begins here. |
+| 0:00 | **Close-up:** Adora's hands typing on keyboard. Camera angle: top-down, fingers visible. She types: `1 + 1 = 2` | Ambient synth pad, soft keyboard clicks. | Slow, deliberate typing. |
+| 0:05 | **Text overlay fades in:** *"There's got to be a better way..."* | Music dips. A single piano note. | Let it breathe for 2 seconds. |
+| 0:08 | **Jump cut:** Adora at desk, side angle, monitor glow on face. She's activating the gateway in terminal. `hermes gateway` command visible. | Sharp cut sound. Music begins—uplifting melody. | The "moment of decision." |
+| 0:12 | **Screen capture:** This Discord chat! Adora types: `@Narusya, please spin up AEGIS and get us ready` | Keyboard typing sounds. | Real chat, real timestamp. |
+| 0:16 | **Cut to:** AEGIS dashboard loading, terminal output scrolling. The AI responding. | Voiceover (Adora): *"This is AEGIS. And this is how we built it."* | Transition into Scene 2. |
 
 ---
 

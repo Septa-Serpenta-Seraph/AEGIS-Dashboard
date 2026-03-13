@@ -52,3 +52,5 @@ temp/
 
 # Screenshots
 screenshots/
+# Demo recordings (large binary files)
+recordings/
