@@ -194,55 +194,15 @@
                 </div>
 
                 <!-- Autonomy View -->
-                <div id="autonomy-view" class="absolute inset-0 bg-[#0a0a0a] hidden flex flex-col p-2 space-y-4 overflow-y-auto">
-                    <!-- Model <!-- Efficiency & Cost --> Credits -->
+                    <!-- Usage & Cost -->
                     <div class="border border-gray-800 p-2 bg-black">
-                        <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest block mb-2">Active Model &amp; Credits</span>
-                        <div class="grid grid-cols-4 gap-2 text-[10px] font-mono">
-                            <div class="p-2 bg-gray-900 border border-gray-800">
-                                <div class="text-gray-600 text-[8px]">MODEL</div>
-                                <div id="model-name" class="text-purple-400 text-[9px]">loading...</div>
-                            </div>
-                            <div class="p-2 bg-gray-900 border border-gray-800">
-                                <div class="text-gray-600 text-[8px]">PROVIDER</div>
-                                <div id="model-provider" class="text-blue-400">--</div>
-                            </div>
-                            <div class="p-2 bg-gray-900 border border-gray-800">
-                                <div class="text-gray-600 text-[8px]">CREDITS LEFT</div>
-                                <div id="credits-remaining" class="text-green-500">--</div>
-                            </div>
-                            <div class="p-2 bg-gray-900 border border-gray-800">
-                                <div class="text-gray-600 text-[8px]">GATEWAY</div>
-                                <div id="gateway-status" class="text-yellow-500">--</div>
-                            </div>
+                        <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest block mb-2">Usage & Cost (Live from OpenRouter)</span>
+                        <div class="p-2 bg-gray-900 border border-gray-800 font-mono text-[10px]">
+                            <div class="text-gray-600 text-[8px]">TOTAL COST USD</div>
+                            <div id="cost-usd" class="text-green-500">loading...</div>
                         </div>
                     </div>
 
-                    <!-- Efficiency <!-- Efficiency & Cost --> Cost -->
-                    <div class="border border-gray-800 p-2 bg-black">
-                        <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest block mb-2">Efficiency & Cost</span>
-                        <div class="grid grid-cols-3 gap-2 text-[10px] font-mono">
-                            <div class="p-2 bg-gray-900 border border-gray-800">
-                                <div class="text-gray-600 text-[8px]">TOTAL TOKENS</div>
-                                <div id="cost-tokens" class="text-white">124.5k</div>
-                            </div>
-                            <div class="p-2 bg-gray-900 border border-gray-800">
-                                <div class="text-gray-600 text-[8px]">TOTAL COST</div>
-                                <div id="cost-usd" class="text-green-500">loading...</div>
-                            </div>
-                            <div class="p-2 bg-gray-900 border border-gray-800">
-                                <div class="text-gray-600 text-[8px]">EFFICIENCY</div>
-                                <div id="efficiency-score" class="text-blue-400">—</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Safety Guardrails -->
-                    <div class="border border-gray-800 p-2 bg-black flex-1">
-                        <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest block mb-2">Ethical Guardrails</span>
-                        <div id="guardrail-list" class="space-y-2">
-                            <!-- Injected guardrails -->
-                        </div>
                     </div>
                 </div>
 
@@ -376,59 +336,18 @@
 
         async function loadAutonomyData() {
             try {
-                // Load Metrics
                 const metRes = await fetch('/api/autonomy/metrics');
                 const metData = await metRes.json();
                 if (metData.success) {
-                    document.getElementById('cost-tokens').innerText = (metData.metrics.total_tokens / 1000).toFixed(1) + 'k';
-                    document.getElementById('cost-usd').innerText = '$' + metData.metrics.total_cost_usd.toFixed(2);
-                    document.getElementById('efficiency-score').innerText = (metData.metrics.efficiency_score * 100).toFixed(0) + '%';
-                }
-
-                // Load Guardrails
-                const guardRes = await fetch('/api/autonomy/guardrails');
-                const guardData = await guardRes.json();
-                const guardList = document.getElementById('guardrail-list');
-                if (guardData.success) {
-                    guardList.innerHTML = guardData.guardrails.map(g => `
-                        <div class="p-2 bg-gray-900 border border-gray-800 text-[9px] font-mono">
-                            <div class="flex justify-between items-center mb-1">
-                                <span class="text-blue-400 font-bold">${esc(g.name)}</span>
-                                <span class="text-[8px] px-1 bg-green-900/20 text-green-500 rounded">${esc(g.status)}</span>
-                            </div>
-                            <div class="text-gray-500 italic">${esc(g.desc)}</div>
-                        </div>
-                    `).join('');
-                }
-                
-                // Load Model & Credits
-                try {
-                    const modelRes = await fetch('/api/autonomy/model');
-                    const modelData = await modelRes.json();
-                    if (modelData.success) {
-                        document.getElementById('model-name').innerText = modelData.model.configured.split('/').pop() || modelData.model.configured;
-                        document.getElementById('model-provider').innerText = modelData.model.provider;
-                        if (modelData.credits) {
-                            if (modelData.credits.remaining_usd !== null) {
-                                document.getElementById('credits-remaining').innerText = '$' + modelData.credits.remaining_usd.toFixed(2);
-                            } else if (modelData.credits.is_free_tier) {
-                                document.getElementById('credits-remaining').innerText = 'FREE';
-                            } else {
-                                document.getElementById('credits-remaining').innerText = '$' + modelData.credits.usage_usd.toFixed(2) + ' used';
-                            }
-                        } else {
-                            document.getElementById('credits-remaining').innerText = 'N/A';
-                        }
-                        if (modelData.gateway.running) {
-                            document.getElementById('gateway-status').innerText = 'ON ' + (modelData.gateway.uptime || '');
-                            document.getElementById('gateway-status').className = 'text-green-500';
-                        } else {
-                            document.getElementById('gateway-status').innerText = 'OFF';
-                            document.getElementById('gateway-status').className = 'text-red-500';
-                        }
+                    if (metData.openrouter && metData.openrouter.total_cost_usd > 0) {
+                        document.getElementById('cost-usd').innerText = '$' + metData.openrouter.total_cost_usd.toFixed(4);
+                    } else if (metData.metrics.total_cost_usd > 0) {
+                        document.getElementById('cost-usd').innerText = '$' + metData.metrics.total_cost_usd.toFixed(4);
+                    } else {
+                        document.getElementById('cost-usd').innerText = 'No data yet';
                     }
-                } catch (e) { console.error('Model load failed', e); }
-            } catch (e) { console.error("Autonomy load failed", e); }
+                }
+            } catch (e) { console.error('Autonomy load failed', e); }
         }
 
         async function lockVision(filename) {
@@ -581,45 +500,21 @@
                 const data = await resp.json();
                 if (!data.success) return;
                 
-                const metrics = data.metrics;
-                
-                // Update cost display
+                // Update cost from OpenRouter (live data)
                 const costEl = document.getElementById('cost-usd');
                 if (costEl) {
-                    costEl.textContent = '$' + (metrics.total_cost_usd || 0).toFixed(4);
-                }
-                
-                // Update efficiency score if element exists
-                const effEl = document.getElementById('efficiency-score');
-                if (effEl) {
-                    effEl.textContent = ((metrics.efficiency_score || 0) * 100).toFixed(0) + '%';
-                }
-                
-                // Update tokens if element exists  
-                const tokensEl = document.getElementById('total-tokens');
-                if (tokensEl) {
-                    const tokens = metrics.total_tokens || 0;
-                    if (tokens > 1000000) {
-                        tokensEl.textContent = (tokens / 1000000).toFixed(1) + 'M';
-                    } else if (tokens > 1000) {
-                        tokensEl.textContent = (tokens / 1000).toFixed(1) + 'K';
+                    if (data.openrouter && data.openrouter.total_cost_usd > 0) {
+                        costEl.textContent = '\$' + data.openrouter.total_cost_usd.toFixed(4);
+                    } else if (data.metrics.total_cost_usd > 0) {
+                        costEl.textContent = '\$' + data.metrics.total_cost_usd.toFixed(4);
                     } else {
-                        tokensEl.textContent = tokens;
+                        costEl.textContent = 'No data yet';
                     }
-                }
-                
-                // Update source indicator
-                const sourceEl = document.getElementById('metrics-source');
-                if (sourceEl) {
-                    sourceEl.textContent = metrics.source === 'live' ? '🟢 Live' : '🟡 Local';
-                    sourceEl.title = 'Data source: ' + (metrics.source || 'unknown');
                 }
             } catch (e) {
                 console.warn('Metrics fetch failed:', e);
             }
         }
-        
-        // === LIVE SYSTEM STATS ===
         async function updateSystemStats() {
             try {
                 const resp = await fetch('/api/containers');

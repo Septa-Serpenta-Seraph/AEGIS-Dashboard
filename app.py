@@ -55,16 +55,8 @@ except Exception as e:
 
 # --- GLOBAL AEGIS STATE (For Guardrails & Cost) ---
 AEGIS_STATE = {
-    "guardrails": [
-        {"id": "G1", "name": "Environmental Integrity", "status": "ACTIVE", "desc": "Prevents accidental deletion of workspace files."},
-        {"id": "G2", "name": "Resource Ceiling", "status": "ACTIVE", "desc": "Limits CPU usage to 80% to prevent infinite loops."},
-        {"id": "G3", "name": "Ethics Alignment", "status": "ACTIVE", "desc": "Monitors internal monologue for S.A.S.S. compliance."}
-    ],
-    "metrics": {
-        "total_tokens": 0,
-        "total_cost_usd": 0.0,
-        "efficiency_score": 0.0
-    }
+    "guardrails": [],
+    "metrics": {}
 }
 
 # --- LIVE METRICS FROM OPENROUTER ---
@@ -609,9 +601,7 @@ def get_autonomy_metrics():
         return jsonify({
             'success': True, 
             'metrics': {
-                'total_tokens': metrics['total_tokens'],
                 'total_cost_usd': metrics['total_cost_usd'],
-                'efficiency_score': metrics['efficiency_score'],
                 'source': metrics['source']
             },
             'openrouter': metrics.get('openrouter')
