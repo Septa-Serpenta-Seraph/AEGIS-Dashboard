@@ -194,6 +194,30 @@
                 </div>
 
                 <!-- Autonomy View -->
+                    <div id="autonomy-view" class="absolute inset-0 bg-[#0a0a0a] hidden flex flex-col p-2 space-y-4 overflow-y-auto">
+                    <!-- Model & Credits -->
+                    <div class="border border-gray-800 p-2 bg-black">
+                        <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest block mb-2">Active Model &amp; Credits</span>
+                        <div class="grid grid-cols-4 gap-2 text-[10px] font-mono">
+                            <div class="p-2 bg-gray-900 border border-gray-800">
+                                <div class="text-gray-600 text-[8px]">MODEL</div>
+                                <div id="model-name" class="text-purple-400 text-[9px]">loading...</div>
+                            </div>
+                            <div class="p-2 bg-gray-900 border border-gray-800">
+                                <div class="text-gray-600 text-[8px]">PROVIDER</div>
+                                <div id="model-provider" class="text-blue-400">—</div>
+                            </div>
+                            <div class="p-2 bg-gray-900 border border-gray-800">
+                                <div class="text-gray-600 text-[8px]">CREDITS USED</div>
+                                <div id="credits-remaining" class="text-green-500">—</div>
+                            </div>
+                            <div class="p-2 bg-gray-900 border border-gray-800">
+                                <div class="text-gray-600 text-[8px]">GATEWAY</div>
+                                <div id="gateway-status" class="text-yellow-500">—</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Usage & Cost -->
                     <div class="border border-gray-800 p-2 bg-black">
                         <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest block mb-2">Usage & Cost (Live from OpenRouter)</span>
@@ -210,7 +234,6 @@
                             <!-- Loaded from API -->
                         </div>
                     </div>
-
                     </div>
                 </div>
 
@@ -343,6 +366,28 @@
         }
 
         async function loadAutonomyData() {
+            // Load model & credits
+            try {
+                const modelRes = await fetch('/api/autonomy/model');
+                const modelData = await modelRes.json();
+                if (modelData.success) {
+                    const name = modelData.model.configured || 'unknown';
+                    document.getElementById('model-name').innerText = name.split('/').pop();
+                    document.getElementById('model-provider').innerText = modelData.model.provider || '—';
+                    if (modelData.credits) {
+                        document.getElementById('credits-remaining').innerText = '$' + modelData.credits.usage_usd.toFixed(4);
+                    }
+                    if (modelData.gateway.running) {
+                        document.getElementById('gateway-status').innerText = 'ON ' + (modelData.gateway.uptime || '');
+                        document.getElementById('gateway-status').className = 'text-green-500';
+                    } else {
+                        document.getElementById('gateway-status').innerText = 'OFF';
+                        document.getElementById('gateway-status').className = 'text-red-500';
+                    }
+                }
+            } catch (e) { console.error('Model load failed', e); }
+
+            // Load cost metrics
             try {
                 const metRes = await fetch('/api/autonomy/metrics');
                 const metData = await metRes.json();
@@ -355,27 +400,27 @@
                         document.getElementById('cost-usd').innerText = 'No data yet';
                     }
                 }
-            } catch (e) { console.error('Autonomy load failed', e); }
+            } catch (e) { console.error('Metrics load failed', e); }
 
-                // Load guardrails (real system state)
-                try {
-                    const guardRes = await fetch('/api/autonomy/guardrails');
-                    const guardData = await guardRes.json();
-                    const guardList = document.getElementById('guardrail-list');
-                    if (guardList && guardData.success && guardData.guardrails && guardData.guardrails.length > 0) {
-                        guardList.innerHTML = guardData.guardrails.map(g => `
-                            <div class="p-2 bg-gray-900 border border-gray-800 text-[9px] font-mono">
-                                <div class="flex justify-between items-center mb-1">
-                                    <span class="text-blue-400 font-bold">${esc(g.name)}</span>
-                                    <span class="text-[8px] px-1 bg-green-900/20 text-green-500 rounded">${esc(g.status)}</span>
-                                </div>
-                                <div class="text-gray-500 italic">${esc(g.desc)}</div>
+            // Load guardrails
+            try {
+                const guardRes = await fetch('/api/autonomy/guardrails');
+                const guardData = await guardRes.json();
+                const guardList = document.getElementById('guardrail-list');
+                if (guardList && guardData.success && guardData.guardrails && guardData.guardrails.length > 0) {
+                    guardList.innerHTML = guardData.guardrails.map(g => `
+                        <div class="p-2 bg-gray-900 border border-gray-800 text-[9px] font-mono">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-blue-400 font-bold">${esc(g.name)}</span>
+                                <span class="text-[8px] px-1 bg-green-900/20 text-green-500 rounded">${esc(g.status)}</span>
                             </div>
-                        `).join('');
-                    } else if (guardList) {
-                        guardList.innerHTML = '<div class="text-gray-600 text-[9px]">No active guardrails</div>';
-                    }
-                } catch (e) { console.error('Guardrails load failed', e); }
+                            <div class="text-gray-500 italic">${esc(g.desc)}</div>
+                        </div>
+                    `).join('');
+                } else if (guardList) {
+                    guardList.innerHTML = '<div class="text-gray-600 text-[9px]">No active guardrails</div>';
+                }
+            } catch (e) { console.error('Guardrails load failed', e); }
         }
 
         async function lockVision(filename) {
