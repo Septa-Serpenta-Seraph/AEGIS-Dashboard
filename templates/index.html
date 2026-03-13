@@ -203,6 +203,14 @@
                         </div>
                     </div>
 
+                    <!-- System Guardrails -->
+                    <div class="border border-gray-800 p-2 bg-black flex-1">
+                        <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest block mb-2">Active Guardrails</span>
+                        <div id="guardrail-list" class="space-y-2">
+                            <!-- Loaded from API -->
+                        </div>
+                    </div>
+
                     </div>
                 </div>
 
@@ -348,6 +356,26 @@
                     }
                 }
             } catch (e) { console.error('Autonomy load failed', e); }
+
+                // Load guardrails (real system state)
+                try {
+                    const guardRes = await fetch('/api/autonomy/guardrails');
+                    const guardData = await guardRes.json();
+                    const guardList = document.getElementById('guardrail-list');
+                    if (guardList && guardData.success && guardData.guardrails && guardData.guardrails.length > 0) {
+                        guardList.innerHTML = guardData.guardrails.map(g => `
+                            <div class="p-2 bg-gray-900 border border-gray-800 text-[9px] font-mono">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-blue-400 font-bold">${esc(g.name)}</span>
+                                    <span class="text-[8px] px-1 bg-green-900/20 text-green-500 rounded">${esc(g.status)}</span>
+                                </div>
+                                <div class="text-gray-500 italic">${esc(g.desc)}</div>
+                            </div>
+                        `).join('');
+                    } else if (guardList) {
+                        guardList.innerHTML = '<div class="text-gray-600 text-[9px]">No active guardrails</div>';
+                    }
+                } catch (e) { console.error('Guardrails load failed', e); }
         }
 
         async function lockVision(filename) {
