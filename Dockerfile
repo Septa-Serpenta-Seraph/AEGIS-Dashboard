@@ -48,7 +48,7 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements first for better caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install matplotlib  # Added since not in requirements but used
+# matplotlib now in requirements.txt
 
 # Install Playwright browsers
 RUN playwright install chromium

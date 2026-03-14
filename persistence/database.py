@@ -85,8 +85,18 @@ def init_db():
     ''')
     
     conn.commit()
+    
+    # Add indexes for timestamp-based queries
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_stats_timestamp ON container_stats(timestamp)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_stats_container ON container_stats(container_id, timestamp)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_snapshots_timestamp ON container_snapshots(timestamp)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_screenshots_timestamp ON screenshots(timestamp)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_chat_timestamp ON chat_logs(timestamp)')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_token_usage_timestamp ON token_usage(timestamp)')
+    conn.commit()
+    
     conn.close()
-    print(f"[*] Database initialized at {DB_PATH}")
+    print(f"[*] Database initialized at {DB_PATH} (with indexes)")
 
 def insert_container_stats(container_id: str, cpu_percent: float, memory_mb: float,
                            network_rx: int, network_tx: int):

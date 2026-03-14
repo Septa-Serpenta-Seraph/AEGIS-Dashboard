@@ -128,7 +128,9 @@
                 <!-- Vision View -->
                 <div id="vision-view" class="absolute inset-0 bg-black p-2 flex flex-col items-center justify-center">
                     <div class="text-gray-700 text-xs text-center" id="vision-display">
-                        NO SIGNAL<br>Waiting for input...
+                        <div class="text-blue-500 mb-2">👁️ VISUAL CORTEX READY</div>
+                        Enter a URL above and click SCAN to capture a screenshot.<br>
+                        <span class="text-gray-600 text-[10px]">Supports http/https. Extract text option available.</span>
                     </div>
                 </div>
 
@@ -225,6 +227,21 @@
                             <div class="text-gray-600 text-[8px]">TOTAL COST USD</div>
                             <div id="cost-usd" class="text-green-500">loading...</div>
                         </div>
+                    </div>
+
+                    <!-- Supervisor Model Selector -->
+                    <div class="border border-gray-800 p-2 bg-black">
+                        <span class="text-[10px] uppercase text-gray-500 font-bold tracking-widest block mb-2">Supervisor Model</span>
+                        <div class="flex items-center space-x-2">
+                            <select id="supervisor-model-select" 
+                                    class="flex-1 bg-gray-900 border border-gray-700 p-2 text-xs font-mono text-white focus:border-blue-500 outline-none"
+                                    onchange="setSupervisorModel(this.value)">
+                                <option value="openrouter/free">Auto (Best Free)</option>
+                                <option disabled>── Loading models... ──</option>
+                            </select>
+                            <button onclick="loadFreeModels()" class="text-xs text-blue-500 hover:text-white px-2" title="Refresh model list">↻</button>
+                        </div>
+                        <div id="model-select-status" class="text-[9px] text-gray-600 mt-1"></div>
                     </div>
 
                     <!-- System Guardrails -->
@@ -345,22 +362,33 @@
             const views = ['vision-view', 'persistence-view', 'autonomy-view', 'chat-view'];
             views.forEach(v => {
                 const el = document.getElementById(v);
-                el.style.display = 'none';
+                if (el) el.style.display = 'none';
             });
             
             // Highlight buttons
             const buttons = ['tab-vision', 'tab-persistence', 'tab-autonomy', 'tab-chat'];
             buttons.forEach(b => {
-                document.getElementById(b).classList.add('bg-black', 'text-gray-500');
-                document.getElementById(b).classList.remove('bg-gray-900', 'text-gray-300', 'text-white');
+                const btn = document.getElementById(b);
+                if (btn) {
+                    btn.classList.add('bg-black', 'text-gray-500');
+                    btn.classList.remove('bg-gray-900', 'text-gray-300', 'text-white');
+                }
             });
 
             // Activate current view
             const activeView = document.getElementById(tab + '-view');
+            if (!activeView) {
+                console.error('Tab view not found: ' + tab + '-view');
+                return;
+            }
             activeView.style.display = 'flex';
-            const activeBtn = document.getElementById(tab === 'persistence' ? 'tab-persistence' : 'tab-' + tab);
-            activeBtn.classList.remove('bg-black', 'text-gray-500');
-            activeBtn.classList.add('bg-gray-900', 'text-white');
+            
+            const tabId = tab === 'persistence' ? 'tab-persistence' : 'tab-' + tab;
+            const activeBtn = document.getElementById(tabId);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-black', 'text-gray-500');
+                activeBtn.classList.add('bg-gray-900', 'text-white');
+            }
 
             if (tab === 'persistence') {
                 loadPersistenceData();
@@ -524,7 +552,9 @@
                 
                 if (Object.keys(metrics).length === 0) {
                     // Fallback to mock if no data yet
-                    metrics = {"T-4": 1.2, "T-3": 2.5, "T-2": 1.8, "T-1": 4.2, "T-0": 3.1};
+                    // No data available yet
+                    display.innerHTML = '<div class="text-gray-600 text-xs">No telemetry data yet. Stats collect every 30s.</div>';
+                    return;
                 }
 
                 const res = await fetch('/api/stats/visualize', {
@@ -556,15 +586,20 @@
                 history.scrollTop = history.scrollHeight;
 
                 // Call API
+                const modelSelect = document.getElementById('supervisor-model-select');
+                const selectedModel = modelSelect ? modelSelect.value : 'openrouter/free';
+                
                 const res = await fetch('/api/supervisor/chat', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({message: msg})
+                    body: JSON.stringify({message: msg, model: selectedModel})
                 });
                 const data = await res.json();
                 
                 // Bot Response
-                history.innerHTML += `<div class="text-blue-400 font-bold">${esc(data.sender)}: ${esc(data.response)}</div>`;
+                const senderName = data.sender || 'Supervisor';
+                history.innerHTML += '<div class="text-blue-400 font-bold">' + esc(senderName) + ':</div>';
+                history.innerHTML += '<div class="text-gray-300 whitespace-pre-wrap">' + esc(data.response) + '</div>';
                 history.scrollTop = history.scrollHeight;
             }
         });
@@ -622,7 +657,7 @@
                         } else if (totalMemMb > 0) {
                             memEl.textContent = Math.round(totalMemMb) + 'MB';
                         } else {
-                            memEl.textContent = '~180MB';
+                            memEl.textContent = 'No data';
                         }
                     }
                 }
@@ -636,6 +671,84 @@
         updateSystemStats();
         setInterval(updateAutonomyMetrics, 30000);
         setInterval(updateSystemStats, 10000);
+
+        // --- Supervisor Model Selector ---
+        let _freeModelsLoaded = false;
+        
+        async function loadFreeModels() {
+            const select = document.getElementById('supervisor-model-select');
+            const status = document.getElementById('model-select-status');
+            if (!select) return;
+            status.textContent = 'Fetching free models...';
+            try {
+                const resp = await fetch('/api/autonomy/free-models');
+                const data = await resp.json();
+                if (data.success && data.models.length > 0) {
+                    select.innerHTML = '<option value="openrouter/free">Auto (Best Free)</option>';
+                    const byProvider = {};
+                    data.models.forEach(m => {
+                        const provider = m.id.split('/')[0];
+                        if (!byProvider[provider]) byProvider[provider] = [];
+                        byProvider[provider].push(m);
+                    });
+                    Object.keys(byProvider).sort().forEach(provider => {
+                        const group = document.createElement('optgroup');
+                        group.label = provider.toUpperCase();
+                        byProvider[provider].forEach(m => {
+                            const opt = document.createElement('option');
+                            opt.value = m.id;
+                            const ctx = m.context_length >= 1000 ? (m.context_length / 1000).toFixed(0) + 'K' : m.context_length;
+                            opt.textContent = m.name + ' (' + ctx + ')';
+                            group.appendChild(opt);
+                        });
+                        select.appendChild(group);
+                    });
+                    status.textContent = data.models.length + ' free models available';
+                    _freeModelsLoaded = true;
+                    loadSupervisorPreference();
+                } else {
+                    status.textContent = 'No free models found';
+                }
+            } catch (e) {
+                console.error('Free models fetch failed:', e);
+                status.textContent = 'Failed to load models';
+            }
+        }
+        
+        async function setSupervisorModel(modelId) {
+            const status = document.getElementById('model-select-status');
+            try {
+                await fetch('/api/autonomy/supervisor-model', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({model: modelId})
+                });
+            } catch (e) { console.warn('Failed to save preference:', e); }
+            localStorage.setItem('aegis_supervisor_model', modelId);
+            const displayName = modelId === 'openrouter/free' ? 'Auto (Best Free)' : modelId.split('/').pop().replace(':free', '');
+            status.textContent = 'Selected: ' + displayName;
+            status.className = 'text-[9px] text-green-500 mt-1';
+            setTimeout(() => { status.textContent = ''; status.className = 'text-[9px] text-gray-600 mt-1'; }, 3000);
+        }
+        
+        async function loadSupervisorPreference() {
+            const select = document.getElementById('supervisor-model-select');
+            if (!select) return;
+            const saved = localStorage.getItem('aegis_supervisor_model');
+            if (saved) { select.value = saved; return; }
+            try {
+                const resp = await fetch('/api/autonomy/supervisor-model');
+                const data = await resp.json();
+                if (data.success && data.model) select.value = data.model;
+            } catch (e) { select.value = 'openrouter/free'; }
+        }
+        
+        // Load models when autonomy tab opens
+        const _origLoadAutonomyData = loadAutonomyData;
+        loadAutonomyData = async function() {
+            await _origLoadAutonomyData();
+            if (!_freeModelsLoaded) await loadFreeModels();
+        };
     </script>
 </body>
 </html>

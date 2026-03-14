@@ -18,7 +18,7 @@ services:
       - ./static:/app/static
       - ./templates:/app/templates
     environment:
-      - FLASK_ENV=development
+      - FLASK_ENV=production
       - DOCKER_HOST=unix:///var/run/docker.sock
     restart: unless-stopped
 
