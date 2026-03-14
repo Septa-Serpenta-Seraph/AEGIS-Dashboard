@@ -701,16 +701,31 @@ def get_guardrails():
     except:
         pass
     
-    # OpenRouter auth
+    # OpenRouter auth — actually check if key exists
+    has_key = bool(os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENROUTER_KEY"))
+    if not has_key:
+        try:
+            with open(os.path.expanduser("~/.hermes/.env")) as f:
+                has_key = any('OPENROUTER' in l and ('KEY' in l or 'API' in l) for l in f)
+        except: pass
     guardrails.append({
         'id': 'G4', 'name': 'Authenticated Provider',
-        'status': 'ACTIVE', 'desc': 'OpenRouter API connected. Model requests routed through authenticated endpoint.'
+        'status': 'ACTIVE' if has_key else 'MISSING KEY',
+        'desc': 'OpenRouter API key ' + ('found and connected.' if has_key else 'NOT CONFIGURED. Set OPENROUTER_API_KEY in ~/.hermes/.env')
     })
     
-    # Playwright/browser available
+    # Playwright/browser available — actually check
+    playwright_ok = False
+    try:
+        import subprocess as _sp
+        result = _sp.run(['python3', '-c', 'from playwright.sync_api import sync_playwright'], 
+                        capture_output=True, timeout=5)
+        playwright_ok = result.returncode == 0
+    except: pass
     guardrails.append({
         'id': 'G5', 'name': 'Sandboxed Browser',
-        'status': 'ACTIVE', 'desc': 'Headless Chromium available for web automation. Sandboxed execution for untrusted content.'
+        'status': 'ACTIVE' if playwright_ok else 'UNAVAILABLE',
+        'desc': 'Headless Chromium ' + ('available for web automation.' if playwright_ok else 'NOT FOUND. Run: pip install playwright && playwright install chromium')
     })
     
     return jsonify({'success': True, 'guardrails': guardrails})

@@ -157,7 +157,7 @@
                              </div>
                              <div class="flex justify-between border-b border-gray-900 pb-1">
                                  <span class="text-gray-600">UPTIME</span>
-                                 <span id="health-uptime" class="text-white">LIVE ARCHIVE</span>
+                                 <span id="health-uptime" class="text-gray-500">checking...</span>
                              </div>
                          </div>
                     </div>
@@ -521,7 +521,11 @@
                     document.getElementById('health-docker').innerText = data.docker.toUpperCase();
                     document.getElementById('health-db').className = data.database === 'ok' ? 'text-green-500' : 'text-red-500';
                     document.getElementById('health-docker').className = data.docker === 'connected' ? 'text-green-500' : 'text-red-500';
-                    document.getElementById('health-uptime').innerText = "LIVE ARCHIVE";
+                    // Uptime is not available from health endpoint — show system status instead
+                    document.getElementById('health-uptime').innerText = 
+                        (data.database === 'ok' && data.docker === 'connected' && data.qdrant === 'active') 
+                            ? 'ALL SYSTEMS NOMINAL' 
+                            : 'DEGRADED';
                 }
             } catch (e) { console.error("Health update failed", e); }
         }
@@ -531,8 +535,7 @@
             const img = document.getElementById('telemetry-img');
             
             try {
-                // Get some sample data or actual historical data
-                // For the demo, let's fetch historical stats for the first container
+                // Fetch historical stats for the first container
                 const containersRes = await fetch('/api/containers');
                 const cData = await containersRes.json();
                 
@@ -551,7 +554,6 @@
                 }
                 
                 if (Object.keys(metrics).length === 0) {
-                    // Fallback to mock if no data yet
                     // No data available yet
                     display.innerHTML = '<div class="text-gray-600 text-xs">No telemetry data yet. Stats collect every 30s.</div>';
                     return;
