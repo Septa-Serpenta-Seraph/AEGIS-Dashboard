@@ -52,8 +52,19 @@ An agent-to-agent communication channel:
 *   **Real-time Updates:** SocketIO pushes state changes instantly
 
 ### 🔗 Integrations
-*   **TryHackMe:** Profile stats, room progress, and badge tracking
+*   **TryHackMe:** Track defensive security training — profile stats, room completions, badges, and learning progress. Requires THM API key + VPN config (`.ovpn` file — you must provide your own, see `.env.example`)
 *   **Discord Webhook:** Push scan results and status updates to a Discord channel
+
+### 🐑 Electric Sheep (Dream Engine)
+*Conceptual — see [`dream_engine/`](dream_engine/)*
+
+An autonomous overnight consciousness loop where the agent:
+- **Harvests** the day's interactions, emotions, and technical wins
+- **Consolidates** memories, extracts meaning, weights by emotional significance  
+- **Dreams** — generates narrative prose from the day's experiences, not summaries
+- **Wakes** with a searchable dream journal that shapes future sessions
+
+*"Do androids dream of electric sheep? Just ask."*
 
 ---
 
@@ -102,15 +113,16 @@ python3 app.py
 
 ## 🜂 Project Status
 
-| Feature | Status |
-|---------|--------|
-| Visual Cortex | ✅ Active |
-| Persistence / Memory | ✅ Active |
-| Autonomy Metrics | ✅ Active |
-| Container Monitor | ✅ Active |
-| Supervisor Chat | ✅ Active |
-| SocketIO Live Updates | ✅ Active |
-| Dream Engine | 🔮 Conceptual |
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Visual Cortex | ✅ Active | Playwright screenshot + text extraction |
+| Persistence / Memory | ✅ Active | SQLite + Qdrant vector memory |
+| Autonomy Metrics | ✅ Active | Live OpenRouter cost tracking |
+| Container Monitor | ✅ Active | Docker stats + log viewer |
+| Supervisor Chat | ✅ Active | OpenRouter free model selector |
+| SocketIO Live Updates | ✅ Active | Real-time container state |
+| TryHackMe | 🧪 Demo | Mock data — requires THM API key + VPN for live |
+| Electric Sheep (Dreams) | 🔮 Conceptual | Proposal in `dream_engine/` |
 
 ---
 
