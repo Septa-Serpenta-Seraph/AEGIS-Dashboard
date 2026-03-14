@@ -54,3 +54,6 @@ temp/
 screenshots/
 # Demo recordings (large binary files)
 recordings/
+
+# VPN configs (user must provide their own)
+*.ovpn
