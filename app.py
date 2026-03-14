@@ -120,8 +120,7 @@ def get_live_autonomy_metrics():
     if or_metrics and or_metrics.get("total_cost_usd", 0) > 0:
         total_cost = or_metrics["total_cost_usd"]
     
-    # Efficiency: ratio of successful completions (placeholder calculation)
-    # In production, this would track task success rate
+    # Efficiency score (not sent to frontend — kept for potential future use)
     efficiency = 0.0
     if total_cost > 0:
         # Normalize: assume ~$0.01 per 1K tokens is baseline
