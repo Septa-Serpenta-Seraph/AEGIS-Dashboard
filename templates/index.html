@@ -362,7 +362,10 @@
             const views = ['vision-view', 'persistence-view', 'autonomy-view', 'chat-view'];
             views.forEach(v => {
                 const el = document.getElementById(v);
-                if (el) el.style.display = 'none';
+                if (el) {
+                    el.style.display = 'none';
+                    el.classList.add('hidden');  // Ensure Tailwind hidden is applied
+                }
             });
             
             // Highlight buttons
@@ -381,6 +384,7 @@
                 console.error('Tab view not found: ' + tab + '-view');
                 return;
             }
+            activeView.classList.remove('hidden');  // Remove Tailwind hidden to override !important
             activeView.style.display = 'flex';
             
             const tabId = tab === 'persistence' ? 'tab-persistence' : 'tab-' + tab;
